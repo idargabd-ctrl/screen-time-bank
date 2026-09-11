@@ -23,6 +23,7 @@ import json
 import re
 import sqlite3
 import time
+from datetime import date, timedelta
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -306,6 +307,9 @@ def parent_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
         "SELECT h.*, c.name AS child_name FROM homework h JOIN child c ON c.id = h.child_id "
         " ORDER BY h.day DESC, h.child_id LIMIT 30"
     ).fetchall()
+    child = conn.execute("SELECT id FROM child ORDER BY id LIMIT 1").fetchone()
+    since = (date.fromisoformat(today()) - timedelta(days=13)).isoformat()
+    pilot_days, pilot_items = service.pilot_summary(conn, child["id"], since=since) if child else ([], [])
     drafts = [dict(r) for r in conn.execute(
         "SELECT id, slug, title, skill, kind, payload FROM task WHERE status = 'draft' ORDER BY skill, id"
     ).fetchall()]
@@ -315,7 +319,8 @@ def parent_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
         payload = json.loads(d.pop("payload") or "{}")
         d["cards"] = tasks.mission_cards(payload) if d["kind"] == tasks.MISSION else []
         d["questions"] = [] if d["kind"] == tasks.MISSION else tasks.generate(d["kind"], payload, seed=1)
-    return render(request, "parent.html", rows=rows, today=today(), drafts=drafts)
+    return render(request, "parent.html", rows=rows, today=today(), drafts=drafts,
+                  pilot_days=pilot_days, pilot_items=pilot_items[:30])
 
 
 @app.post("/parent/review")
@@ -457,6 +462,7 @@ async def task_submit(request: Request, assignment_id: int,
             if not card.mission_done:
                 return RedirectResponse(f"/task/{assignment_id}", status_code=303)
             return render(request, "mission-done.html", result=card, item=item,
+                          attempt_id=attempt_id,
                           view=service.day_view(conn, child_id, today()))
 
         result = service.submit(conn, child_id=child_id, attempt_id=attempt_id,
@@ -465,8 +471,22 @@ async def task_submit(request: Request, assignment_id: int,
         return render(request, "message.html", title="Не получилось", text=str(exc))
 
     return render(request, "result.html", result=result, item=item,
+                  attempt_id=attempt_id,
                   view=service.day_view(conn, child_id, today()),
                   child_view=result.judgement.for_child())
+
+
+@app.post("/rate/{attempt_id}")
+def rate(request: Request, attempt_id: int, rating: str = Form(...),
+         conn: sqlite3.Connection = Depends(get_conn)):
+    """Добровольная оценка задания. Ничего не даёт и ничего не отнимает."""
+    child_id = current_child(request)
+    try:
+        service.rate_attempt(conn, child_id=child_id, attempt_id=attempt_id,
+                             rating=rating, at=now_iso())
+    except service.ServiceError:
+        pass   # чужая или несуществующая попытка — просто на главную
+    return RedirectResponse("/", status_code=303)
 
 
 @app.get("/status")

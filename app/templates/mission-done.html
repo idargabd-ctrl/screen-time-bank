@@ -36,6 +36,18 @@
   </div>
 {% endif %}
 
+
+{# Добровольная оценка — одна, в конце, как просит методика. Можно не отвечать:
+   кнопка «К заданиям» рядом и ничего не теряется. #}
+<div class="note rate">
+  <b>Как тебе задание?</b> <span class="muted">Можно не отвечать.</span>
+  <form method="post" action="/rate/{{ attempt_id }}" class="row" style="margin-top:10px">
+    <button class="btn ghost" type="submit" name="rating" value="boring">Скучно</button>
+    <button class="btn ghost" type="submit" name="rating" value="ok">Нормально</button>
+    <button class="btn ghost" type="submit" name="rating" value="fun">Интересно</button>
+  </form>
+</div>
+
 <div class="gap"></div>
 <a class="btn wide" href="/">К заданиям</a>
 {% endblock %}

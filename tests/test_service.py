@@ -268,3 +268,40 @@ def test_sunday_is_for_mondays_homework():
     p = service.homework_policy("2026-09-13")
     assert not p.nothing_allowed
     assert p.for_monday
+
+
+# --------------------------------------------------------------------------
+# Пилот: оценка ребёнка и сводка
+# --------------------------------------------------------------------------
+
+
+def test_rating_is_voluntary_replaceable_and_only_for_own_attempts(conn):
+    view = service.day_view(conn, 1, DAY)
+    item = view.items[0]
+    attempt_id = service.start_attempt(conn, child_id=1, assignment_id=item.assignment_id, at=AT)
+
+    service.rate_attempt(conn, child_id=1, attempt_id=attempt_id, rating="ok", at=AT)
+    service.rate_attempt(conn, child_id=1, attempt_id=attempt_id, rating="fun", at=AT)
+    rows = conn.execute("SELECT rating FROM rating").fetchall()
+    assert [r["rating"] for r in rows] == ["fun"], "повторная оценка заменяет, а не добавляет"
+
+    conn.execute("INSERT INTO child (id, name, fl_child_id, fl_device_id) VALUES (9,'другой','C9','D9')")
+    with pytest.raises(service.ServiceError):
+        service.rate_attempt(conn, child_id=9, attempt_id=attempt_id, rating="ok", at=AT)
+    with pytest.raises(service.ServiceError):
+        service.rate_attempt(conn, child_id=1, attempt_id=attempt_id, rating="great", at=AT)
+
+
+def test_pilot_summary_counts_offered_started_finished_and_ratings(conn):
+    view = service.day_view(conn, 1, DAY)
+    item = view.items[0]
+    attempt_id = service.start_attempt(conn, child_id=1, assignment_id=item.assignment_id, at=AT)
+    service.submit(conn, child_id=1, attempt_id=attempt_id, answers=right_answers(conn, attempt_id), at=AT)
+    service.rate_attempt(conn, child_id=1, attempt_id=attempt_id, rating="boring", at=AT)
+
+    days, items = service.pilot_summary(conn, 1, since=DAY)
+    assert len(days) == 1 and days[0].day == DAY
+    assert days[0].offered == len(view.items)
+    assert days[0].started == 1 and days[0].finished == 1
+    assert days[0].ratings == {"boring": 1, "ok": 0, "fun": 0}
+    assert items[0].finished is True and items[0].rating == "скучно"

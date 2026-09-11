@@ -54,6 +54,35 @@
 {% endfor %}
 </div>
 
+{# Пилот: что предложено, начато, закончено, подсказки и оценки. Ровно тот
+   минимум, который методика просит собирать. Времени решения здесь нет —
+   оно не штраф. #}
+<div class="gap"></div>
+<h2 id="pilot">Пилот: две недели</h2>
+{% if not pilot_days %}
+  <p class="muted">Пока нет ни одной попытки.</p>
+{% else %}
+  <div class="tablewrap">
+  <table class="pilot">
+    <tr><th>День</th><th>Предложено</th><th>Начато</th><th>Закончено</th><th>Подсказок</th><th>Скучно</th><th>Норм.</th><th>Интересно</th></tr>
+    {% for d in pilot_days %}
+      <tr><td>{{ d.day[5:] }}</td><td>{{ d.offered }}</td><td>{{ d.started }}</td><td>{{ d.finished }}</td>
+          <td>{{ d.hints }}</td><td>{{ d.ratings.boring }}</td><td>{{ d.ratings.ok }}</td><td>{{ d.ratings.fun }}</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  <p class="muted" style="margin-top:8px">Последние попытки:</p>
+  <div class="tablewrap">
+  <table class="pilot">
+    <tr><th>День</th><th>Задание</th><th>Итог</th><th>Подсказок</th><th>Оценка</th></tr>
+    {% for i in pilot_items %}
+      <tr><td>{{ i.day[5:] }}</td><td>{{ i.title }}<br><span class="muted">{{ i.skill }}</span></td>
+          <td>{{ "зачтено" if i.finished else "не закончено" }}</td><td>{{ i.hints }}</td><td>{{ i.rating or "—" }}</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+{% endif %}
+
 {# Черновики заданий. Единственное место, где ответы видны целиком: это
    страница родителя, и решение «в каталог» принимает он. #}
 <div class="gap"></div>

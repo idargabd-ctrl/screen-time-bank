@@ -117,6 +117,19 @@ CREATE TABLE IF NOT EXISTS homework (
     UNIQUE (child_id, day)
 );
 
+-- Добровольная оценка задания ребёнком после завершения: скучно / нормально /
+-- интересно. Одна на попытку, можно не ставить. Это данные пилота для
+-- родителя, на минуты не влияет и никуда, кроме /parent, не показывается.
+CREATE TABLE IF NOT EXISTS rating (
+    id         INTEGER PRIMARY KEY,
+    child_id   INTEGER NOT NULL REFERENCES child(id),
+    attempt_id INTEGER NOT NULL UNIQUE REFERENCES attempt(id),
+    task_id    INTEGER NOT NULL REFERENCES task(id),
+    day        TEXT    NOT NULL,
+    rating     TEXT    NOT NULL,
+    created_at TEXT    NOT NULL
+);
+
 -- Журнал наград. UNIQUE — это и есть идемпотентность: две вкладки, повторная
 -- отправка и перезапуск сервера не создадут вторую награду за то же задание.
 CREATE TABLE IF NOT EXISTS reward (

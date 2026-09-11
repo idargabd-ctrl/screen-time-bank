@@ -307,3 +307,10 @@ details.draft { border: 1px solid var(--line); border-radius: var(--radius); pad
 details.draft > summary { cursor: pointer; padding: 4px 0; }
 details.draft .q { margin-top: 10px; }
 .answer { color: var(--acid); font-weight: 700; }
+
+/* ---- Сводка пилота на странице родителя --------------------------------- */
+.tablewrap { overflow-x: auto; }
+table.pilot { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.pilot th, table.pilot td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+table.pilot th { color: var(--dim); font-weight: 600; }
+.note.rate .row > * { flex: 1 1 90px; padding: 10px 8px; font-size: 15px; }

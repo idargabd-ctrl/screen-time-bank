@@ -32,6 +32,104 @@ class ServiceError(Exception):
 
 
 # --------------------------------------------------------------------------
+# Пилот: оценка ребёнка и сводка для родителя
+# --------------------------------------------------------------------------
+
+RATINGS = ("boring", "ok", "fun")
+RATING_LABELS = {"boring": "скучно", "ok": "нормально", "fun": "интересно"}
+
+
+def rate_attempt(conn: sqlite3.Connection, *, child_id: int, attempt_id: int,
+                 rating: str, at: str) -> None:
+    """
+    Ставит оценку попытке. Добровольно: методика просит одну оценку в конце,
+    а не опрос после каждого клика. Повторная оценка заменяет прежнюю.
+    """
+    if rating not in RATINGS:
+        raise ServiceError("Непонятная оценка")
+    row = conn.execute(
+        "SELECT at.id, a.task_id, a.day FROM attempt at JOIN assignment a ON a.id = at.assignment_id "
+        " WHERE at.id = ? AND a.child_id = ?", (attempt_id, child_id),
+    ).fetchone()
+    if row is None:
+        raise ServiceError("Это не твоя попытка")
+    with conn:
+        conn.execute(
+            "INSERT INTO rating (child_id, attempt_id, task_id, day, rating, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT (attempt_id) DO UPDATE SET rating = excluded.rating, created_at = excluded.created_at",
+            (child_id, attempt_id, row["task_id"], row["day"], rating, at),
+        )
+
+
+@dataclass(frozen=True)
+class PilotDay:
+    day: str
+    offered: int      # назначено заданий
+    started: int      # начато попыток
+    finished: int     # заработано наград
+    hints: int        # открыто подсказок в миссиях
+    ratings: dict     # {"boring": n, "ok": n, "fun": n}
+
+
+@dataclass(frozen=True)
+class PilotItem:
+    day: str
+    title: str
+    skill: str
+    finished: bool
+    hints: int
+    rating: str       # "" если не оценил
+
+
+def pilot_summary(conn: sqlite3.Connection, child_id: int, *, since: str) -> tuple[list[PilotDay], list[PilotItem]]:
+    """
+    Что предложено, начато, закончено, сколько подсказок и какие оценки — по
+    дням с даты since. Ровно тот минимум, который методика просит собирать
+    (§10), без времени решения как штрафа и без «процента знаний».
+    """
+    days: dict[str, dict] = {}
+
+    def bucket(day: str) -> dict:
+        return days.setdefault(day, {"offered": 0, "started": 0, "finished": 0, "hints": 0,
+                                     "ratings": {r: 0 for r in RATINGS}})
+
+    for r in conn.execute("SELECT day, COUNT(*) n FROM assignment WHERE child_id = ? AND day >= ? GROUP BY day",
+                          (child_id, since)):
+        bucket(r["day"])["offered"] = r["n"]
+    for r in conn.execute(
+        "SELECT a.day, COUNT(*) n FROM attempt at JOIN assignment a ON a.id = at.assignment_id "
+        " WHERE a.child_id = ? AND a.day >= ? GROUP BY a.day", (child_id, since)):
+        bucket(r["day"])["started"] = r["n"]
+    for r in conn.execute("SELECT day, COUNT(*) n FROM reward WHERE child_id = ? AND day >= ? GROUP BY day",
+                          (child_id, since)):
+        bucket(r["day"])["finished"] = r["n"]
+    for r in conn.execute(
+        "SELECT a.day, at.hints_used FROM attempt at JOIN assignment a ON a.id = at.assignment_id "
+        " WHERE a.child_id = ? AND a.day >= ?", (child_id, since)):
+        opened = json.loads(r["hints_used"] or "{}")
+        bucket(r["day"])["hints"] += sum(int(v) for v in opened.values())
+    for r in conn.execute("SELECT day, rating, COUNT(*) n FROM rating WHERE child_id = ? AND day >= ? GROUP BY day, rating",
+                          (child_id, since)):
+        bucket(r["day"])["ratings"][r["rating"]] = r["n"]
+
+    summary = [PilotDay(day=d, **days[d]) for d in sorted(days, reverse=True)]
+
+    items = []
+    for r in conn.execute(
+        "SELECT a.day, t.title, t.skill, at.hints_used, at.id AS attempt_id, "
+        "       (SELECT 1 FROM reward rw WHERE rw.child_id = a.child_id AND rw.task_id = a.task_id AND rw.day = a.day) AS done, "
+        "       (SELECT rating FROM rating rt WHERE rt.attempt_id = at.id) AS rating "
+        "  FROM attempt at JOIN assignment a ON a.id = at.assignment_id JOIN task t ON t.id = a.task_id "
+        " WHERE a.child_id = ? AND a.day >= ? ORDER BY a.day DESC, at.id DESC", (child_id, since)):
+        opened = json.loads(r["hints_used"] or "{}")
+        items.append(PilotItem(day=r["day"], title=r["title"], skill=r["skill"] or "",
+                               finished=bool(r["done"]), hints=sum(int(v) for v in opened.values()),
+                               rating=RATING_LABELS.get(r["rating"] or "", "")))
+    return summary, items
+
+
+# --------------------------------------------------------------------------
 # Календарь: дата словами и правила домашки по дням недели
 # --------------------------------------------------------------------------
 
