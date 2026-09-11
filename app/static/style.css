@@ -231,8 +231,13 @@ video.lesson {
   background: #000;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  margin-bottom: 14px;
+  margin: 12px 0 14px;
 }
+/* Разбор под кнопкой: своя попытка сначала, помощь по запросу. */
+details.help { margin-bottom: 16px; }
+details.help > summary { list-style: none; }
+details.help > summary::-webkit-details-marker { display: none; }
+details.help[open] > summary { opacity: 0.7; }
 
 /* ---- Миссии ------------------------------------------------------------ */
 

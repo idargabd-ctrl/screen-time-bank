@@ -7,22 +7,26 @@
   <span class="who">+{{ item.reward_minutes }} мин</span>
 </div>
 
+{# Сначала своя попытка, разбор — под кнопкой. По методике до первой
+   попытки нет обязательного видео: знакомую тему можно закрыть без него,
+   а помощь можно попросить сразу, и она ничего не стоит. #}
+<div class="note">
+  Попробуй решить сам — вопросы идут по номерам варианта. Одна ошибка не
+  страшна.{% if item.video_file %} Застрял — открой разбор ниже, это бесплатно.{% endif %}
+</div>
+
 {% if item.video_file %}
-  {# Ролик отдаётся с нашего же домена. Он уже разрешён в Chrome у ребёнка,
-     поэтому ни YouTube, ни облако подключать не требуется. #}
-  <video class="lesson" controls preload="metadata"
-         src="/media/{{ item.video_file }}"
-         playsinline controlslist="nodownload">
-    Браузер не смог открыть видео. Скажи папе.
-  </video>
-  <div class="note">
-    Сначала посмотри разбор, потом отвечай. Вопросы идут по шагам решения —
-    одна ошибка не страшна.
-  </div>
-{% else %}
-  <div class="note">
-    Отвечай по шагам — вопросы ведут к ответу. Одна ошибка не страшна.
-  </div>
+  <details class="help">
+    <summary class="btn ghost wide">Нужна помощь? Посмотреть разбор</summary>
+    {# Ролик отдаётся с нашего же домена. Он уже разрешён в Chrome у ребёнка,
+       поэтому ни YouTube, ни облако подключать не требуется. preload=none:
+       пока разбор закрыт, ролик не грузится. #}
+    <video class="lesson" controls preload="none"
+           src="/media/{{ item.video_file }}"
+           playsinline controlslist="nodownload">
+      Браузер не смог открыть видео. Скажи папе.
+    </video>
+  </details>
 {% endif %}
 
 <form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off">
