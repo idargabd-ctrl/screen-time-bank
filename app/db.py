@@ -52,6 +52,14 @@ CREATE TABLE IF NOT EXISTS task (
     video_file     TEXT    NOT NULL DEFAULT '',
     payload        TEXT    NOT NULL DEFAULT '{}',
     reward_minutes INTEGER NOT NULL,
+    -- Навык, который тренирует задание. У одного навыка несколько заданий-
+    -- вариантов: в день назначается навык, а вариант выбирается тот, что
+    -- ребёнок видел давнее всего. Повтор того же условия — не практика.
+    skill          TEXT    NOT NULL DEFAULT '',
+    -- draft — ждёт решения родителя на /parent, active — в каталоге,
+    -- rejected — отклонено. Колонка active дублирует status для старых
+    -- запросов и всегда согласована с ним.
+    status         TEXT    NOT NULL DEFAULT 'active',
     active         INTEGER NOT NULL DEFAULT 1
 );
 
@@ -196,6 +204,8 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("attempt", "hints_used", "TEXT NOT NULL DEFAULT '{}'"),
     ("delivery", "applied_minutes", "INTEGER"),
     ("homework", "photo_file", "TEXT NOT NULL DEFAULT ''"),
+    ("task", "skill", "TEXT NOT NULL DEFAULT ''"),
+    ("task", "status", "TEXT NOT NULL DEFAULT 'active'"),
 ]
 
 

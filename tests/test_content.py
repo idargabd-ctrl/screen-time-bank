@@ -120,6 +120,26 @@ EXPECTED = {
     "mission-ch1-otkuda-vyvod":             ["2", "1", "2", "1", "1"],
     "mission-a1-obyavlenie-na-dveri":       ["2", "12", "1", "1", "1"],
 
+    # Вторая партия: по два варианта на навык (content/missions-batch2.json).
+    "mission-m1b-skiny-optom": ["1", "60", "1", "1", "18"],
+    "mission-m1c-picca-na-komandu": ["2", "840", "1", "2", "60"],
+    "mission-m2b-kovrik-i-lenta": ["2", "24", "да", "18", "2", "12"],
+    "mission-m2c-zagon-dlya-lam": ["2", "35", "да", "36", "2", "2"],
+    "mission-m3b-strim-zakonchilsya": ["85", "19", "50", "1", "11", "45"],
+    "mission-m3c-kvest-v-parke": ["55", "11", "35", "1", "14", "10"],
+    "mission-r1b-stal-i-stol": ["столовая", "1", "1", "моряк", "1"],
+    "mission-r1c-visna-ili-vesna": ["весна", "1", "1", "землю", "1"],
+    "mission-r2b-robot-na-parkovke": ["3", "подъехал", "уехал", "1", "1"],
+    "mission-r2c-avatar-prygnul": ["3", "прыгнул", "приземлился", "1", "2"],
+    "mission-r3b-pech-i-pech": ["1", "2", "2", "1", "2"],
+    "mission-r3c-eli-i-eli": ["1", "2", "1", "1", "2"],
+    "mission-o1b-rostki-na-okne": ["2", "нет", "1", "1"],
+    "mission-o1c-mashinki-na-gorke": ["2", "нет", "1", "1"],
+    "mission-ch1b-mesto-v-komande": ["1", "1", "2", "1", "1"],
+    "mission-ch1c-poslednyaya-batareyka": ["1", "2", "3", "1", "1"],
+    "mission-a1b-chess-club": ["2", "5", "2", "2", "1"],
+    "mission-a1c-music-club": ["3", "3", "1", "1", "14"],
+
     # Целые варианты 2025: ответы по номерам, прочитаны с кадров роликов и
     # пересчитаны. Порядок — как в ролике.
     "vpr4-2025-real-2": ["409", "51", "110", "19", "50", "16", "1", "6", "21", "686", "44", "9", "4", "Й", "11"],

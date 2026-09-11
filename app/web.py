@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 import time
@@ -305,7 +306,29 @@ def parent_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
         "SELECT h.*, c.name AS child_name FROM homework h JOIN child c ON c.id = h.child_id "
         " ORDER BY h.day DESC, h.child_id LIMIT 30"
     ).fetchall()
-    return render(request, "parent.html", rows=rows, today=today())
+    drafts = [dict(r) for r in conn.execute(
+        "SELECT id, slug, title, skill, kind, payload FROM task WHERE status = 'draft' ORDER BY skill, id"
+    ).fetchall()]
+    # Родитель видит миссию целиком — условия, ответы, подсказки. Ребёнку
+    # такое не показывается никогда; это единственная страница с ответами.
+    for d in drafts:
+        payload = json.loads(d.pop("payload") or "{}")
+        d["cards"] = tasks.mission_cards(payload) if d["kind"] == tasks.MISSION else []
+        d["questions"] = [] if d["kind"] == tasks.MISSION else tasks.generate(d["kind"], payload, seed=1)
+    return render(request, "parent.html", rows=rows, today=today(), drafts=drafts)
+
+
+@app.post("/parent/review")
+def parent_review(request: Request, task_id: int = Form(...), decision: str = Form(...),
+                  conn: sqlite3.Connection = Depends(get_conn)):
+    """Утвердить или отклонить черновик. В каталог попадает только утверждённое."""
+    if not parent_logged_in(request):
+        raise HTTPException(status_code=401)
+    status = "active" if decision == "approve" else "rejected"
+    with conn:
+        conn.execute("UPDATE task SET status = ?, active = ? WHERE id = ? AND status = 'draft'",
+                     (status, 1 if status == "active" else 0, task_id))
+    return RedirectResponse("/parent#drafts", status_code=303)
 
 
 @app.post("/parent/login")

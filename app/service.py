@@ -109,20 +109,37 @@ def _assign_section(conn: sqlite3.Connection, child_id: int, day: str,
     if already >= limit:
         return
 
-    pool = [r["id"] for r in conn.execute(
-        "SELECT id FROM task WHERE active = 1 AND section = ? ORDER BY id",
+    rows = conn.execute(
+        "SELECT id, skill FROM task WHERE active = 1 AND section = ? ORDER BY id",
         (section,),
-    ).fetchall()]
-    if not pool:
+    ).fetchall()
+    if not rows:
         return
 
-    # Окно сдвигается на ЦЕЛЫЙ день заданий, а не на одно: раньше сдвиг был на
-    # единицу, и при двух миссиях в день каждая показывалась два дня подряд,
-    # а разбор ВПР — три. Ребёнок платил бы вниманием за одно и то же, а
-    # банк — минутами. Теперь соседние дни не пересекаются, каталог обходится
-    # за ceil(размер / limit) дней и идёт по кругу.
-    shift = (date.fromisoformat(day).toordinal() * limit) % len(pool)
-    chosen = [pool[(shift + i) % len(pool)] for i in range(min(limit, len(pool)))]
+    # Ротация идёт по НАВЫКАМ, а не по заданиям. У навыка может быть несколько
+    # заданий-вариантов с разными условиями; в день назначается навык, а из
+    # его вариантов берётся тот, что ребёнок видел давнее всего. Так повтор
+    # навыка через несколько дней — это новое условие, а не то же самое
+    # задание с уже известными ответами. Задание без навыка — само себе навык.
+    groups: dict[str, list[int]] = {}
+    for r in rows:
+        groups.setdefault(r["skill"] or f"#{r['id']}", []).append(r["id"])
+    skills = list(groups)
+
+    # Окно сдвигается на ЦЕЛЫЙ день навыков: соседние дни не пересекаются,
+    # каталог обходится за ceil(размер / limit) дней и идёт по кругу.
+    shift = (date.fromisoformat(day).toordinal() * limit) % len(skills)
+    chosen_skills = [skills[(shift + i) % len(skills)] for i in range(min(limit, len(skills)))]
+
+    last_seen = {r["task_id"]: r["last"] for r in conn.execute(
+        "SELECT task_id, MAX(day) AS last FROM assignment WHERE child_id = ? GROUP BY task_id",
+        (child_id,),
+    ).fetchall()}
+    chosen = []
+    for skill in chosen_skills:
+        variants = groups[skill]
+        # Никогда не виденное — первым; иначе самое давнее. При равенстве — по id.
+        chosen.append(min(variants, key=lambda t: (last_seen.get(t, ""), t)))
 
     with conn:
         for task_id in chosen:

@@ -467,3 +467,58 @@ def test_another_child_cannot_submit_or_ask_for_hints(conn):
         service.submit_card(conn, child_id=2, attempt_id=attempt, answers={}, at=AT)
     with pytest.raises(service.ServiceError):
         service.reveal_hint(conn, child_id=2, attempt_id=attempt)
+
+
+# --------------------------------------------------------------------------
+# Ротация по навыкам: варианты одного навыка не повторяют условие
+# --------------------------------------------------------------------------
+
+
+def _catalogue(tmp_path, skills):
+    """skills: список (id, skill). Все — активные миссии."""
+    c = db.open_db(tmp_path / "skills.sqlite3")
+    c.execute("INSERT INTO child (id, name, fl_child_id, fl_device_id) VALUES (1,'с','C','D')")
+    for i, skill in skills:
+        c.execute(
+            "INSERT INTO task (id, slug, kind, version, title, section, payload, reward_minutes, skill) "
+            "VALUES (?, ?, 'mission', 1, ?, 'missions', ?, 10, ?)",
+            (i, f"m{i}", f"Миссия {i}", json.dumps(MISSION, ensure_ascii=False), skill),
+        )
+    return c
+
+
+def test_a_day_assigns_skills_not_tasks(tmp_path):
+    """Два варианта одного навыка никогда не назначаются в один день."""
+    c = _catalogue(tmp_path, [(1, "цена за штуку"), (2, "цена за штуку"), (3, "площадь"), (4, "площадь")])
+    for d in range(11, 20):
+        ids = [i.task_id for i in service.day_view(c, 1, f"2026-09-{d}").by_section(service.MISSIONS)]
+        skills = {c.execute("SELECT skill FROM task WHERE id = ?", (i,)).fetchone()[0] for i in ids}
+        assert len(skills) == len(ids), f"{d}: один навык дважды за день"
+    c.close()
+
+
+def test_the_least_recently_seen_variant_comes_next(tmp_path):
+    """Навык вернулся — условие новое: берётся вариант, виденный давнее всего."""
+    c = _catalogue(tmp_path, [(1, "цена"), (2, "цена"), (3, "цена"), (4, "время"), (5, "время")])
+    seen = []
+    for d in range(1, 9):
+        ids = [i.task_id for i in service.day_view(c, 1, f"2026-10-{d:02d}").by_section(service.MISSIONS)]
+        price = [i for i in ids if i in (1, 2, 3)]
+        seen.extend(price)
+    # Три варианта навыка «цена» должны чередоваться, а не залипать на одном.
+    assert set(seen[:3]) == {1, 2, 3}
+    for a, b in zip(seen, seen[1:]):
+        assert a != b, "тот же вариант два дня подряд"
+    c.close()
+
+
+def test_drafts_and_rejected_are_not_assigned(tmp_path):
+    c = _catalogue(tmp_path, [(1, "цена"), (2, "цена")])
+    c.execute("UPDATE task SET status = 'draft', active = 0 WHERE id = 2")
+    c.execute("INSERT INTO task (id, slug, kind, version, title, section, payload, reward_minutes, skill, status, active) "
+              "VALUES (3, 'm3', 'mission', 1, 'x', 'missions', ?, 10, 'время', 'rejected', 0)",
+              (json.dumps(MISSION, ensure_ascii=False),))
+    for d in range(1, 6):
+        ids = [i.task_id for i in service.day_view(c, 1, f"2026-10-{d:02d}").by_section(service.MISSIONS)]
+        assert ids == [1]
+    c.close()

@@ -301,3 +301,9 @@ details.help[open] > summary { opacity: 0.7; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .task.hw { cursor: default; }
 .task.hw:active { transform: none; }
+
+/* ---- Черновики на странице родителя ------------------------------------ */
+details.draft { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 10px; }
+details.draft > summary { cursor: pointer; padding: 4px 0; }
+details.draft .q { margin-top: 10px; }
+.answer { color: var(--acid); font-weight: 700; }

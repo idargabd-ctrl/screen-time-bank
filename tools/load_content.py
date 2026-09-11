@@ -86,6 +86,9 @@ def load_file(conn, path: Path, dry_run: bool) -> tuple[int, int, list[str]]:
     source = data.get("source", "")
     # Раздел задаётся на уровне файла: миссии и разборы ВПР лежат врозь.
     section = data.get("section", "vpr")
+    # Файл черновиков: задания попадают в базу, но не в каталог, пока родитель
+    # не утвердит их на /parent. Решение родителя загрузчик не перезаписывает.
+    file_status = data.get("status", "active")
     items = data.get("tasks") or []
 
     problems: list[str] = []
@@ -111,12 +114,14 @@ def load_file(conn, path: Path, dry_run: bool) -> tuple[int, int, list[str]]:
             if not dry_run:
                 conn.execute(
                     "INSERT INTO task (slug, kind, version, title, subject, source, "
-                    "                  section, video_file, payload, reward_minutes, active) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)",
+                    "                  section, video_file, payload, reward_minutes, "
+                    "                  skill, status, active) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (task["slug"], task["kind"], int(task.get("version", 1)), task["title"],
                      subject, source, task.get("section", section),
                      task.get("video_file", ""), payload_text,
-                     int(task["reward_minutes"])),
+                     int(task["reward_minutes"]), skill_of(task), file_status,
+                     1 if file_status == "active" else 0),
                 )
             added += 1
             continue
@@ -150,14 +155,32 @@ def load_file(conn, path: Path, dry_run: bool) -> tuple[int, int, list[str]]:
             conn.execute(
                 "UPDATE task SET kind = ?, version = ?, title = ?, subject = ?, source = ?, "
                 "                section = ?, video_file = ?, payload = ?, "
-                "                reward_minutes = ? WHERE slug = ?",
+                "                reward_minutes = ?, skill = ? WHERE slug = ?",
                 (task["kind"], new_version, task["title"], subject, source,
                  task.get("section", section), task.get("video_file", ""), payload_text,
-                 int(task["reward_minutes"]), task["slug"]),
+                 int(task["reward_minutes"]), skill_of(task), task["slug"]),
             )
         updated += 1
 
     return added, updated, problems
+
+
+def skill_of(task: dict) -> str:
+    """Навык: явное поле задания, иначе skill из payload миссии, иначе пусто."""
+    return str(task.get("skill") or (task.get("payload") or {}).get("skill") or "").strip()
+
+
+def fill_missing_skills(conn, dry_run: bool) -> int:
+    """Старые записи без навыка получают его из payload — один раз, при миграции."""
+    rows = conn.execute("SELECT id, payload FROM task WHERE skill = ''").fetchall()
+    n = 0
+    for r in rows:
+        skill = str((json.loads(r["payload"] or "{}")).get("skill") or "").strip()
+        if skill:
+            n += 1
+            if not dry_run:
+                conn.execute("UPDATE task SET skill = ? WHERE id = ?", (skill, r["id"]))
+    return n
 
 
 def ensure_child(conn, cfg: config.Config, dry_run: bool) -> None:
@@ -202,6 +225,9 @@ def main() -> int:
     say("")
 
     ensure_child(conn, cfg, args.dry_run)
+    filled = fill_missing_skills(conn, args.dry_run)
+    if filled:
+        say(f"Навык проставлен у {filled} старых заданий")
     say("")
 
     total_added = total_updated = 0

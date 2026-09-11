@@ -53,4 +53,48 @@
   </div>
 {% endfor %}
 </div>
+
+{# Черновики заданий. Единственное место, где ответы видны целиком: это
+   страница родителя, и решение «в каталог» принимает он. #}
+<div class="gap"></div>
+<h2 id="drafts">Черновики заданий</h2>
+{% if not drafts %}
+  <p class="muted">Новых черновиков нет.</p>
+{% else %}
+  <p class="muted">
+    {{ drafts|length }} на проверку. Утверждённое попадает в ротацию со следующего дня.
+    Реши сам, не глядя на ответ, потом сравни.
+  </p>
+  {% for d in drafts %}
+    <details class="draft">
+      <summary><b>{{ d.title }}</b> <span class="muted">— {{ d.skill or "без навыка" }}</span></summary>
+      {% for c in d.cards %}
+        <div class="q">
+          <p><b>{{ c.title }}.</b> {{ c.intro }}</p>
+          {% for q in c.questions %}
+            <p>{{ loop.index }}. {{ q.prompt }}<br>
+               <span class="answer">Ответ: {{ q.answer }}</span>
+               {% if q.hint %}<br><span class="muted">При ошибке: {{ q.hint }}</span>{% endif %}</p>
+          {% endfor %}
+          {% if c.hints %}<p class="muted">Подсказки по запросу: {{ c.hints|join(" → ") }}</p>{% endif %}
+        </div>
+      {% endfor %}
+      {% for q in d.questions %}
+        <div class="q"><p>{{ loop.index }}. {{ q.prompt }}<br><span class="answer">Ответ: {{ q.answer }}</span></p></div>
+      {% endfor %}
+      <div class="row">
+        <form method="post" action="/parent/review">
+          <input type="hidden" name="task_id" value="{{ d.id }}">
+          <input type="hidden" name="decision" value="approve">
+          <button class="btn wide" type="submit">В каталог</button>
+        </form>
+        <form method="post" action="/parent/review">
+          <input type="hidden" name="task_id" value="{{ d.id }}">
+          <input type="hidden" name="decision" value="reject">
+          <button class="btn ghost wide" type="submit">Отклонить</button>
+        </form>
+      </div>
+    </details>
+  {% endfor %}
+{% endif %}
 {% endblock %}
