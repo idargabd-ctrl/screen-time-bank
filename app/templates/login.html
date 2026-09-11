@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+
+{% block body %}
+<div class="gap"></div>
+<h1>Банк времени</h1>
+<p class="muted">Решаешь задания — получаешь минуты на планшет.</p>
+
+<div class="gap"></div>
+
+{% if error %}
+  <div class="note bad">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/login">
+  <div class="q">
+    <p>Введи свой код</p>
+    <input type="password" name="pin" inputmode="numeric" autofocus
+           autocomplete="off" enterkeyhint="go">
+  </div>
+  <button class="btn wide" type="submit">Войти</button>
+</form>
+{% endblock %}

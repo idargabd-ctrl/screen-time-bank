@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Результат{% endblock %}
+
+{% block body %}
+{% set j = result.judgement %}
+
+{% if j.passed %}
+  <h1>Изи. {{ j.correct }} из {{ j.total }}</h1>
+  <div class="board">
+    <div class="label">
+      {% if result.granted %}Начислено{% else %}За это задание уже начислено{% endif %}
+    </div>
+    <div class="big">+{{ item.reward_minutes if item else result.minutes }}<small> мин</small></div>
+    <div class="stats">
+      <div class="stat"><b>{{ result.balance.earned }}</b><span>всего за сегодня</span></div>
+      <div class="stat"><b>{{ result.balance.target }}</b><span>минут на планшете</span></div>
+    </div>
+  </div>
+
+  {% if not result.balance.gate_open %}
+    <div class="note locked">
+      <b>Минуты записаны, но заперты.</b>
+      Отметь домашку на главной — и они уйдут на планшет.
+    </div>
+  {% endif %}
+{% else %}
+  <h1>Мимо. {{ j.correct }} из {{ j.total }}</h1>
+  <div class="note bad">
+    <b>Пока не зачтено.</b>
+    Посмотри, где не сошлось, и попробуй снова — вопросы будут другие,
+    так что придётся разобраться, а не угадать.
+  </div>
+{% endif %}
+
+<h2>Разбор</h2>
+
+{% for d in child_view["items"] %}
+  <div class="q {{ 'right' if d.ok else 'wrong' }}">
+    <span class="num">{{ d.n }}</span>
+    <div class="verdict">{{ "в точку" if d.ok else "не сошлось" }}</div>
+    <p>{{ d.prompt }}</p>
+    <div class="given">Твой ответ: {{ d.given if d.given else "— пусто —" }}</div>
+    {% if d.hint %}<div class="hint">{{ d.hint }}</div>{% endif %}
+  </div>
+{% endfor %}
+
+<div class="gap"></div>
+<div class="row">
+  {% if not j.passed and item %}
+    <a class="btn" href="/task/{{ item.assignment_id }}">Попробовать снова</a>
+  {% endif %}
+  <a class="btn ghost" href="/">К заданиям</a>
+</div>
+{% endblock %}

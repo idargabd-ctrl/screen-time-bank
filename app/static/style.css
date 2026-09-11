@@ -1,0 +1,298 @@
+/*
+  Оформление детской части.
+
+  Ориентир — не «школьный сайт», а игровой интерфейс: тёмный фон, крупные
+  скруглённые блоки, жирный рубленый шрифт, один кислотный акцент. Никаких
+  звёздочек и похвал: главная цифра на экране — минуты, всё остальное вокруг
+  неё.
+
+  Планшет держат в руках, поэтому кнопки крупные, а шрифт не мельче 16px.
+*/
+
+:root {
+  --bg: #0e1116;
+  --card: #171c24;
+  --card-2: #1e242e;
+  --line: #2a323f;
+  --text: #e8edf4;
+  --dim: #8b97a8;
+  --acid: #b8ff2e;
+  --acid-dark: #7fb800;
+  --warn: #ffb020;
+  --bad: #ff5c5c;
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 500 17px/1.45 "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 56px;
+}
+
+h1, h2, h3 { margin: 0 0 12px; font-weight: 800; letter-spacing: -0.02em; }
+h1 { font-size: 27px; }
+h2 { font-size: 21px; }
+
+a { color: var(--acid); }
+
+/* ---- Табло ------------------------------------------------------------ */
+
+.board {
+  background: linear-gradient(160deg, var(--card-2), var(--card));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.board .big {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--acid);
+}
+.board .big small { font-size: 22px; font-weight: 800; color: var(--dim); }
+
+.board .label { color: var(--dim); font-size: 15px; margin-bottom: 4px; }
+
+.stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.stat {
+  flex: 1 1 100px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.stat b { display: block; font-size: 22px; font-weight: 800; }
+.stat span { color: var(--dim); font-size: 13px; }
+
+/* ---- Плашки ----------------------------------------------------------- */
+
+.note {
+  border-radius: 14px;
+  padding: 13px 15px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 16px;
+}
+.note.locked { border-color: var(--warn); background: rgba(255,176,32,0.09); }
+.note.sync   { border-color: var(--acid-dark); background: rgba(184,255,46,0.08); }
+.note.ok     { border-color: var(--acid-dark); background: rgba(184,255,46,0.10); }
+.note.bad    { border-color: var(--bad); background: rgba(255,92,92,0.10); }
+.note b { color: var(--text); }
+
+/* ---- Задания ---------------------------------------------------------- */
+
+.tasks { display: grid; gap: 10px; }
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 15px 16px;
+  text-decoration: none;
+  color: var(--text);
+}
+.task:active { transform: scale(0.99); }
+.task .mins {
+  flex: 0 0 auto;
+  min-width: 62px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 19px;
+  color: var(--acid);
+  background: rgba(184,255,46,0.10);
+  border-radius: 12px;
+  padding: 9px 6px;
+  line-height: 1.1;
+}
+.task .mins em { display: block; font-size: 11px; font-style: normal; color: var(--dim); }
+.task .name { flex: 1; font-weight: 700; }
+.task .sub { color: var(--dim); font-size: 14px; font-weight: 500; margin-top: 2px; }
+.task.done { opacity: 0.55; }
+.task.done .mins { color: var(--dim); background: rgba(255,255,255,0.05); }
+
+/* ---- Кнопки ----------------------------------------------------------- */
+
+.btn {
+  display: inline-block;
+  border: 0;
+  border-radius: 14px;
+  padding: 15px 22px;
+  font: 800 18px/1 inherit;
+  font-family: inherit;
+  background: var(--acid);
+  color: #0b0f14;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+}
+.btn:active { transform: translateY(1px); }
+/* Кнопка-ссылка для второстепенного действия, чтобы не спорила с главными. */
+.link {
+  background: none; border: none; padding: 6px;
+  color: var(--dim); font: inherit; font-size: 14px;
+  text-decoration: underline; cursor: pointer;
+}
+.btn.wide { display: block; width: 100%; }
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > * { flex: 1 1 140px; }
+
+/* ---- Вопросы ---------------------------------------------------------- */
+
+.q {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.q .num {
+  display: inline-block;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.07);
+  color: var(--dim);
+  font-weight: 800;
+  font-size: 14px;
+  text-align: center;
+  line-height: 26px;
+  margin-bottom: 9px;
+}
+.q p { margin: 0 0 13px; font-weight: 600; }
+
+input[type="text"], input[type="password"] {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #0b0f14;
+  color: var(--text);
+  padding: 14px 15px;
+  font: 700 19px inherit;
+  font-family: inherit;
+}
+input:focus { outline: 2px solid var(--acid-dark); outline-offset: 1px; }
+
+.q.right { border-color: var(--acid-dark); }
+.q.wrong { border-color: var(--bad); }
+.q .verdict { font-weight: 800; font-size: 15px; margin-bottom: 6px; }
+.q.right .verdict { color: var(--acid); }
+.q.wrong .verdict { color: var(--bad); }
+.q .given { color: var(--dim); font-size: 15px; }
+.q .hint { margin-top: 8px; font-size: 15px; color: var(--warn); }
+
+/* ---- Мелочи ----------------------------------------------------------- */
+
+.muted { color: var(--dim); }
+.center { text-align: center; }
+.gap { height: 18px; }
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+.top .who { color: var(--dim); font-size: 15px; }
+form.inline { display: inline; }
+form.inline .btn { padding: 9px 14px; font-size: 14px; }
+
+/* ---- Видео урока ------------------------------------------------------ */
+
+video.lesson {
+  display: block;
+  width: 100%;
+  max-height: 62vh;              /* чтобы вопросы не уезжали целиком за экран */
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+}
+
+/* ---- Миссии ------------------------------------------------------------ */
+
+.section-note { font-size: 15px; margin: -6px 0 12px; }
+
+/* Прогресс по карточкам: конец миссии виден заранее, чтобы у неё была ясная
+   точка остановки, а не бесконечная лента заданий. */
+.steps { display: flex; align-items: center; gap: 7px; margin-bottom: 16px; }
+.step {
+  width: 30px; height: 30px; border-radius: 10px;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 14px;
+  background: rgba(255,255,255,0.05);
+  color: var(--dim);
+  border: 1px solid var(--line);
+}
+.step.done { background: rgba(184,255,46,0.15); color: var(--acid); border-color: var(--acid-dark); }
+.step.now  { background: var(--acid); color: #0b0f14; border-color: var(--acid); }
+.steps-label { color: var(--dim); font-size: 14px; margin-left: 4px; }
+
+.intro {
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--acid-dark);
+  border-radius: 14px;
+  padding: 15px 17px;
+  margin-bottom: 16px;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.hints {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 15px;
+}
+.hints-head {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-size: 14px; color: var(--dim); margin-bottom: 11px;
+}
+.hint-open {
+  background: rgba(255,176,32,0.08);
+  border: 1px solid var(--warn);
+  border-radius: 12px;
+  padding: 11px 13px;
+  margin-bottom: 9px;
+  font-size: 16px;
+}
+
+/* ---- Родительская страница: снимки тетради ----------------------------- */
+
+.thumb {
+  flex: 0 0 auto;
+  width: 84px; height: 84px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dim); font-size: 12px; text-align: center;
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.task.hw { cursor: default; }
+.task.hw:active { transform: none; }

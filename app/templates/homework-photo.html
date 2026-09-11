@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Домашка{% endblock %}
+
+{% block body %}
+<div class="gap"></div>
+{% if what == "diary" %}
+  <h1>Покажи дневник</h1>
+  <p class="muted">
+    В будни обычно задают. Сфотографируй страницу дневника с сегодняшним
+    днём — если там правда пусто, задания на сайте откроются.
+  </p>
+{% else %}
+  <h1>Покажи тетрадь</h1>
+  <p class="muted">
+    Сфотографируй страницу с {% if policy.for_monday %}домашкой на понедельник{% else %}сегодняшней домашкой{% endif %}
+    — и сразу +{{ balance.homework_minutes }} мин.
+  </p>
+{% endif %}
+
+{% if error %}
+  <div class="note bad">{{ error }}</div>
+{% endif %}
+
+{# capture="environment" открывает заднюю камеру сразу, минуя галерею:
+   снимок делается здесь и сейчас. Отправка — сама, как только снимок есть,
+   чтобы не было второго шага «а теперь нажми ещё сюда». #}
+<form method="post" action="/homework" enctype="multipart/form-data" id="photo-form">
+  <input type="hidden" name="action" value="{{ 'nothing' if what == 'diary' else 'done' }}">
+  <input type="file" name="photo" id="photo" accept="image/*" capture="environment"
+         hidden required>
+  <label for="photo" class="btn wide">Сфотографировать</label>
+  <p class="muted center" id="hint" style="margin-top:12px">Откроется камера</p>
+  <button class="btn ghost wide" type="submit" id="send" hidden>Отправить</button>
+</form>
+
+<div class="gap"></div>
+<a class="link center" href="/" style="display:block">Назад</a>
+
+<script>
+(function () {
+  var input = document.getElementById("photo");
+  var form = document.getElementById("photo-form");
+  var hint = document.getElementById("hint");
+  var send = document.getElementById("send");
+  input.addEventListener("change", function () {
+    if (!input.files || !input.files.length) return;
+    hint.textContent = "Отправляю…";
+    send.hidden = false;      // на случай, если автоотправка не сработает
+    form.submit();
+  });
+})();
+</script>
+{% endblock %}

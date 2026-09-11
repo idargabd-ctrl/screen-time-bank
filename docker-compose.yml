@@ -1,0 +1,90 @@
+# Этап 1: стенд выдачи времени.
+#
+# Два контейнера:
+#   familylink-auth  — один раз входит в Google и хранит сессию
+#   homeassistant    — держит интеграцию, которая ходит в Family Link
+#
+# Запуск:  docker compose up -d
+# Логи:    docker compose logs -f
+# Стоп:    docker compose down
+#
+# ВАЖНО ПРО БЕЗОПАСНОСТЬ: во всех портах ниже стоит префикс 127.0.0.1.
+# Это значит "слушать только на самом ноутбуке". Ни один из этих сервисов
+# не должен быть доступен из интернета: через порт 8099 отдаётся полная
+# сессия Google. Единственное исключение — порт 80 учебного сайта, и тот
+# виден только в домашней сети: роутер снаружи ничего не пропускает.
+
+name: uroki
+
+services:
+  familylink-auth:
+    image: ghcr.io/noiwid/familylink-auth:standalone
+    container_name: familylink-auth
+    ports:
+      - "127.0.0.1:8099:8099"   # API: отдаёт cookies Home Assistant'у
+      - "127.0.0.1:6080:6080"   # окно браузера для входа в Google
+    volumes:
+      - ./data/familylink-auth:/share/familylink:rw
+    shm_size: "2gb"             # Chromium внутри требует много общей памяти
+    environment:
+      - LOG_LEVEL=info
+      - AUTH_TIMEOUT=300
+      - SESSION_DURATION=86400
+      - VNC_PASSWORD=${VNC_PASSWORD:?задайте VNC_PASSWORD в .env}
+      - API_KEY=${FL_AUTH_API_KEY:?задайте FL_AUTH_API_KEY в .env}
+      - LANGUAGE=ru-RU
+      - TIMEZONE=${TZ:-Europe/Moscow}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    restart: unless-stopped
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    ports:
+      - "127.0.0.1:8123:8123"
+    volumes:
+      - ./data/homeassistant:/config
+    environment:
+      - TZ=${TZ:-Europe/Moscow}
+    depends_on:
+      - familylink-auth
+    restart: unless-stopped
+
+  web:
+    build: .
+    container_name: uroki-web
+    # Единственный порт без 127.0.0.1: сайт открывается с планшета по домашней
+    # сети, http://uroki.example.ru (домен указывает на адрес ноутбука в
+    # локальной сети). В интернет сайт не выставлен — см. docs/domain-setup.md.
+    ports:
+      - "80:8000"
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./appdata:/app/appdata  # база живёт вне образа
+      - ./media:/app/media:ro   # видеоуроки: только чтение, приложение их не меняет
+    environment:
+      - TZ=${TZ:-Europe/Moscow}
+    # Файлы базы должны остаться доступными обычному пользователю: иначе
+    # tools/load_content.py и set_pin.py перестанут в неё писать с хоста.
+    user: "1000:1000"
+    restart: unless-stopped
+
+  worker:
+    build: .
+    container_name: uroki-worker
+    command: ["python", "-m", "app.worker"]
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./appdata:/app/appdata
+    environment:
+      - TZ=${TZ:-Europe/Moscow}
+      # В .env стоит 127.0.0.1 — так нужно скриптам на хосте. Внутри
+      # контейнера это он сам, поэтому здесь адрес переопределяется на имя
+      # контейнера Home Assistant. Переменная окружения важнее .env.
+      - HA_URL=http://homeassistant:8123
+    user: "1000:1000"
+    depends_on:
+      - homeassistant
+    restart: unless-stopped

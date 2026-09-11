@@ -1,0 +1,8 @@
+# Скрипты для Debian-сервера обязаны иметь окончания строк LF.
+# С виндовыми CRLF bash выдаёт «bad interpreter» и не запускается вовсе,
+# а причина по сообщению не угадывается. Поэтому фиксируем явно.
+*.sh text eol=lf
+
+# Docker-контейнеры тоже читают эти файлы на Linux.
+docker-compose.yml text eol=lf
+.env.example text eol=lf

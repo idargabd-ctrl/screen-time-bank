@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Родитель{% endblock %}
+
+{% block body %}
+<div class="top">
+  <h1>Домашка</h1>
+  <span class="who">родитель</span>
+</div>
+<p class="muted">
+  Что отмечал сын и что снял. Отзыв отметки запирает минуты за домашку и
+  заработанное на сайте; награды за задания из журнала не стираются.
+</p>
+
+{% if not rows %}
+  <div class="note">Отметок пока нет.</div>
+{% endif %}
+
+<div class="tasks">
+{% for r in rows %}
+  <div class="task hw {% if r.revoked_at %}done{% endif %}" style="align-items:flex-start">
+    {% if r.photo_file %}
+      <a href="/parent/photo/{{ r.photo_file }}" target="_blank" class="thumb">
+        <img src="/parent/photo/{{ r.photo_file }}" alt="снимок тетради">
+      </a>
+    {% else %}
+      <div class="thumb none">нет фото</div>
+    {% endif %}
+    <div class="name">
+      {{ r.day }}{% if r.day == today %} — сегодня{% endif %}
+      <div class="sub">
+        {% if r.revoked_at %}
+          Отозвано{% if r.revoked_reason %}: {{ r.revoked_reason }}{% endif %}
+        {% elif r.marked_as == "nothing_assigned" %}
+          Не задавали (отметил {{ "сын" if r.marked_by == "child" else r.marked_by }})
+        {% else %}
+          Сделано, отметил {{ "сын" if r.marked_by == "child" else r.marked_by }}
+          в {{ r.marked_at[11:16] }}
+        {% endif %}
+      </div>
+      {% if not r.revoked_at %}
+        <form method="post" action="/parent/revoke" class="row" style="margin-top:10px">
+          <input type="hidden" name="child_id" value="{{ r.child_id }}">
+          <input type="hidden" name="day" value="{{ r.day }}">
+          <input type="text" name="reason" placeholder="причина (необязательно)"
+                 style="flex:2 1 160px">
+          <button class="btn ghost" type="submit" style="flex:1 1 120px; padding:10px 14px; font-size:15px"
+                  onclick="return confirm('Отозвать отметку за {{ r.day }}? Минуты запрутся обратно.')">
+            Отозвать
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

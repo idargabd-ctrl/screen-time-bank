@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Миссия пройдена{% endblock %}
+
+{% block body %}
+<h1>Миссия пройдена</h1>
+
+<div class="board">
+  <div class="label">
+    {% if result.granted %}Начислено за миссию{% else %}За эту миссию уже начислено{% endif %}
+  </div>
+  <div class="big">+{{ item.reward_minutes }}<small> мин</small></div>
+  <div class="stats">
+    <div class="stat"><b>{{ result.balance.earned }}</b><span>всего за сегодня</span></div>
+    <div class="stat"><b>{{ result.balance.target }}</b><span>минут на планшете</span></div>
+  </div>
+</div>
+
+{# Обратная связь по методике: конкретно про способ, который сработал, а не
+   «молодец». Ребёнок должен понять, за что именно похвалили. #}
+{% set feedback = item.feedback if item.feedback is defined else "" %}
+{% if feedback %}
+  <div class="note ok">{{ feedback }}</div>
+{% endif %}
+
+{% if not result.balance.gate_open %}
+  <div class="note locked">
+    <b>Минуты записаны, но заперты.</b>
+    Отметь домашку на главной — и они уйдут на планшет.
+  </div>
+{% endif %}
+
+{% if result.balance.capped %}
+  <div class="note">
+    <b>Дневной максимум.</b> Больше {{ result.balance.daily_max }} мин за день не выйдет.
+    Остальные миссии не пропадут — вернёшься к ним завтра.
+  </div>
+{% endif %}
+
+<div class="gap"></div>
+<a class="btn wide" href="/">К заданиям</a>
+{% endblock %}

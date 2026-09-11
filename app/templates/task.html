@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block body %}
+<div class="top">
+  <h1>{{ item.title }}</h1>
+  <span class="who">+{{ item.reward_minutes }} мин</span>
+</div>
+
+{% if item.video_file %}
+  {# Ролик отдаётся с нашего же домена. Он уже разрешён в Chrome у ребёнка,
+     поэтому ни YouTube, ни облако подключать не требуется. #}
+  <video class="lesson" controls preload="metadata"
+         src="/media/{{ item.video_file }}"
+         playsinline controlslist="nodownload">
+    Браузер не смог открыть видео. Скажи папе.
+  </video>
+  <div class="note">
+    Сначала посмотри разбор, потом отвечай. Вопросы идут по шагам решения —
+    одна ошибка не страшна.
+  </div>
+{% else %}
+  <div class="note">
+    Отвечай по шагам — вопросы ведут к ответу. Одна ошибка не страшна.
+  </div>
+{% endif %}
+
+<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off">
+  <input type="hidden" name="attempt_id" value="{{ attempt_id }}">
+
+  {% for q in questions %}
+    <div class="q">
+      <span class="num">{{ q.n }}</span>
+      <p>{{ q.prompt }}</p>
+      <input type="text" name="q{{ q.n }}" inputmode="text"
+             autocapitalize="off" spellcheck="false">
+    </div>
+  {% endfor %}
+
+  <button class="btn wide" type="submit">Проверить</button>
+</form>
+
+<div class="gap"></div>
+<a class="btn ghost wide" href="/">Назад</a>
+{% endblock %}

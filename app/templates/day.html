@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Сегодня{% endblock %}
+
+{% block body %}
+<div class="top">
+  <h1>{{ title_date }}</h1>
+  <span class="who">{{ child.name if child else "" }}</span>
+</div>
+
+<div class="board">
+  <div class="label">Минут на сегодня</div>
+  <div class="big" id="target">{{ view.balance.target }}<small> мин</small></div>
+
+  <div class="stats">
+    <div class="stat">
+      <b>{{ view.balance.base }}</b>
+      <span>база каждый день</span>
+    </div>
+    <div class="stat">
+      <b id="hw">{{ "+" ~ view.balance.homework_bonus if view.balance.homework_bonus else "—" }}</b>
+      <span>за домашку</span>
+    </div>
+    <div class="stat">
+      <b id="earned">{{ view.balance.earned }}</b>
+      <span>за задания</span>
+    </div>
+    <div class="stat">
+      <b>{{ view.balance.daily_max }}</b>
+      <span>максимум в день</span>
+    </div>
+  </div>
+</div>
+
+{# Ворота домашней работы. Пока закрыты — заработанное честно показываем
+   отдельно, а не прячем в ноль. Сделанная домашка сама стоит минут, и это
+   видно в цифре сразу — до всяких заданий. #}
+{% if not view.balance.gate_open %}
+  <div class="note locked">
+    {% if nudge %}
+      <b>Выполни, пожалуйста, в первую очередь домашку</b> — и получишь
+      +{{ view.balance.homework_minutes }} мин к своему времени.
+      {% if view.balance.earned %}
+        Заработанные {{ view.balance.earned }} мин тоже откроются.
+      {% endif %}
+    {% elif view.balance.earned %}
+      <b>Ты сделал домашку{% if policy.for_monday %} на понедельник{% endif %}?</b>
+      За неё +{{ view.balance.homework_minutes }} мин, и ещё
+      {{ view.balance.earned }} заработанных ждут её.
+    {% else %}
+      <b>Ты сделал домашку{% if policy.for_monday %} на понедельник{% endif %}?</b>
+      За неё сразу +{{ view.balance.homework_minutes }} мин.
+    {% endif %}
+    <div class="gap"></div>
+    <div class="row">
+      <a class="btn wide" href="/homework/photo">Да, сделал</a>
+      <form method="post" action="/homework">
+        <input type="hidden" name="action" value="no">
+        <button class="btn ghost wide" type="submit">Нет</button>
+      </form>
+    </div>
+    {# В воскресенье варианта «не задавали» нет: делается домашка на
+       понедельник. В будни он есть, но со снимком дневника. #}
+    {% if policy.nothing_allowed %}
+      {% if policy.nothing_needs_photo %}
+        <a class="link center" href="/homework/photo?what=diary" style="display:block; margin-top:8px">
+          Сегодня не задавали
+        </a>
+      {% else %}
+        <form method="post" action="/homework" class="center" style="margin-top:8px">
+          <input type="hidden" name="action" value="nothing">
+          <button class="link" type="submit">Сегодня не задавали</button>
+        </form>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endif %}
+
+{# Состояние выдачи. «Принято» и «применено» — разные вещи, и врать здесь
+   нельзя: если написать «готово» раньше времени, доверие к системе кончится. #}
+{% if view.balance.target > view.balance.base %}
+  {% set st = delivery.status if delivery else "none" %}
+  {% if st == "confirmed" %}
+    <div class="note ok"><b>Время на планшете.</b> Можно играть.</div>
+  {% elif st in ("pending", "unknown") %}
+    <div class="note sync" id="sync">
+      <b>Синхронизируется…</b> Минуты уже твои, планшет вот-вот их увидит.
+    </div>
+  {% elif st == "not_applied" %}
+    <div class="note bad">
+      <b>Не доехало до планшета.</b> Минуты записаны и не потеряются — скажи папе.
+    </div>
+  {% endif %}
+{% endif %}
+
+{% if view.balance.capped %}
+  <div class="note">
+    <b>Дневной максимум.</b> Больше {{ view.balance.daily_max }} мин за день не выйдет,
+    задания на потом не пропадут.
+  </div>
+{% endif %}
+
+{# Два раздела, а не один список. Миссии — ежедневная практика способа, их
+   на день назначается только две. Разборы ВПР — подготовка к конкретной
+   работе, там уместен весь список. Смешивать их значило бы дать выбирать
+   привычное вместо нужного. #}
+
+{% macro task_list(items) %}
+  <div class="tasks">
+    {% for item in items %}
+      {% if item.state == "earned" %}
+        <div class="task done">
+          <div class="mins">+{{ item.reward_minutes }}<em>получено</em></div>
+          <div class="name">{{ item.title }}<div class="sub">Готово</div></div>
+        </div>
+      {% else %}
+        <a class="task" href="/task/{{ item.assignment_id }}">
+          <div class="mins">+{{ item.reward_minutes }}<em>минут</em></div>
+          <div class="name">
+            {{ item.title }}
+            <div class="sub">
+              {% if item.cards_total %}
+                {% if item.state == "in_progress" %}Начато, продолжить{% else %}{{ item.cards_total }} карточки{% endif %}
+              {% else %}
+                {% if item.state == "in_progress" %}Начато, продолжить{% else %}Открыть{% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% set missions = view.by_section("missions") %}
+{% set vpr = view.by_section("vpr") %}
+
+{% if missions %}
+  <h2>Миссии на сегодня</h2>
+  <p class="muted section-note">
+    Короткие задания по шагам. Подсказки бесплатны и награду не уменьшают.
+  </p>
+  {{ task_list(missions) }}
+  <div class="gap"></div>
+{% endif %}
+
+{% if vpr %}
+  <h2>Разбор заданий ВПР</h2>
+  <p class="muted section-note">
+    Видео с разбором и вопросы по нему. Можно проходить в любом порядке.
+  </p>
+  {{ task_list(vpr) }}
+{% endif %}
+
+{% if not missions and not vpr %}
+  <div class="note">Заданий на сегодня нет.</div>
+{% endif %}
+
+{% if view.available_minutes %}
+  <p class="muted center" style="margin-top:18px">
+    Сегодня можно заработать ещё {{ view.available_minutes }} мин
+  </p>
+{% endif %}
+
+<script>
+// Плашка «синхронизируется» должна гаснуть сама, без перезагрузки страницы:
+// иначе ребёнок будет жать F5 и решать, что система сломана.
+(function () {
+  var note = document.getElementById("sync");
+  if (!note) return;
+  var tries = 0;
+  var timer = setInterval(function () {
+    tries += 1;
+    if (tries > 40) { clearInterval(timer); return; }
+    fetch("/status", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (s) {
+        document.getElementById("target").innerHTML = s.target + "<small> мин</small>";
+        document.getElementById("earned").textContent = s.earned;
+        document.getElementById("hw").textContent = s.homework_bonus ? "+" + s.homework_bonus : "—";
+        if (s.delivery === "confirmed") {
+          clearInterval(timer);
+          note.className = "note ok";
+          note.innerHTML = "<b>Время на планшете.</b> Можно играть.";
+        } else if (s.delivery === "not_applied") {
+          clearInterval(timer);
+          note.className = "note bad";
+          note.innerHTML = "<b>Не доехало до планшета.</b> Минуты записаны и не потеряются — скажи папе.";
+        }
+      })
+      .catch(function () { /* сеть моргнула — просто пробуем снова */ });
+  }, 3000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Родитель{% endblock %}
+
+{% block body %}
+<div class="gap"></div>
+<h1>Для родителя</h1>
+<p class="muted">Снимки тетради и отзыв отметки о домашке.</p>
+
+{% if error %}
+  <div class="note bad">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/parent/login">
+  <div class="q">
+    <p>Пароль родителя</p>
+    <input type="password" name="password" autofocus autocomplete="current-password">
+  </div>
+  <button class="btn wide" type="submit">Войти</button>
+</form>
+{% endblock %}
