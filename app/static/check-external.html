@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Проверка внешних ресурсов</title>
+
+<!-- ТЕСТ 1: внешний стиль со шрифтом. Если режим «только одобренные сайты»
+     фильтрует подресурсы, этот файл не загрузится. -->
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap">
+
+<style>
+  body { background:#0e1116; color:#e8edf4; margin:0; padding:20px;
+         font:600 17px/1.45 system-ui, sans-serif; }
+  h1 { font-size:22px; margin:0 0 16px; }
+  .t { border:1px solid #2a323f; border-radius:14px; padding:14px; margin-bottom:10px; }
+  .t b { display:block; font-size:15px; color:#8b97a8; margin-bottom:6px; font-weight:600; }
+  .v { font-size:19px; font-weight:800; }
+  .wait { color:#ffb020; }
+  .yes  { color:#b8ff2e; }
+  .no   { color:#ff5c5c; }
+  .probe { font:700 40px "Inter", monospace; }
+  iframe { width:100%; height:120px; border:1px solid #2a323f; border-radius:12px; background:#fff; }
+</style>
+</head>
+<body>
+
+<h1>Что грузится на планшете</h1>
+
+<div class="t">
+  <b>1. Шрифт с fonts.googleapis.com (внешний стиль + файл шрифта)</b>
+  <div class="v wait" id="r1">проверяю…</div>
+  <div class="probe" id="probe">Шрифт 123</div>
+</div>
+
+<div class="t">
+  <b>2. Картинка с чужого домена</b>
+  <div class="v wait" id="r2">проверяю…</div>
+</div>
+
+<div class="t">
+  <b>3. Скрипт с CDN (cdnjs, за ним Cloudflare)</b>
+  <div class="v wait" id="r3">проверяю…</div>
+</div>
+
+<div class="t">
+  <b>4. Встроенный фрейм с чужого домена (ожидаемо заблокирован)</b>
+  <div class="v wait" id="r4">смотри глазами: если ниже белое пустое поле или ошибка — заблокирован</div>
+  <iframe src="https://example.com/" referrerpolicy="no-referrer"></iframe>
+</div>
+
+<p style="color:#8b97a8;font-size:15px">
+  Страница нарочно ничего не сохраняет и ни на что не влияет.
+  После проверки файл можно удалить.
+</p>
+
+<script>
+function say(id, ok, textOk, textNo) {
+  var el = document.getElementById(id);
+  el.className = "v " + (ok ? "yes" : "no");
+  el.textContent = ok ? textOk : textNo;
+}
+
+// 1. Шрифт. Меряем ширину одной и той же строки в Inter и в запасном
+// моноширинном: если ширины совпали, Inter не приехал.
+(function () {
+  var done = false;
+  function check() {
+    if (done) return;
+    var ok = false;
+    try { ok = document.fonts.check('700 40px "Inter"'); } catch (e) { ok = false; }
+    if (!ok) {
+      // запасная проверка на случай, если document.fonts врёт
+      var a = document.createElement("span"), b = document.createElement("span");
+      a.style.font = '700 40px "Inter", monospace';
+      b.style.font = '700 40px monospace';
+      a.textContent = b.textContent = "ШрифтШрифт123";
+      a.style.position = b.style.position = "absolute";
+      a.style.visibility = b.style.visibility = "hidden";
+      document.body.appendChild(a); document.body.appendChild(b);
+      ok = Math.abs(a.offsetWidth - b.offsetWidth) > 2;
+      a.remove(); b.remove();
+    }
+    done = true;
+    say("r1", ok, "ЗАГРУЗИЛСЯ — внешние стили и шрифты работают",
+                  "НЕ ЗАГРУЗИЛСЯ — внешние стили и шрифты блокируются");
+  }
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('700 40px "Inter"').then(check, check);
+  }
+  setTimeout(check, 6000);
+})();
+
+// 2. Картинка с чужого домена.
+(function () {
+  var img = new Image();
+  img.onload  = function () { say("r2", true,  "ЗАГРУЗИЛАСЬ", ""); };
+  img.onerror = function () { say("r2", false, "", "НЕ ЗАГРУЗИЛАСЬ"); };
+  img.src = "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png?x=" + Date.now();
+  setTimeout(function () {
+    var el = document.getElementById("r2");
+    if (el.className.indexOf("wait") >= 0) say("r2", false, "", "НЕ ОТВЕТИЛА за 8 с");
+  }, 8000);
+})();
+
+// 3. Скрипт с CDN.
+(function () {
+  var s = document.createElement("script");
+  s.src = "https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js";
+  s.onload  = function () {
+    say("r3", typeof window.dayjs === "function",
+        "ЗАГРУЗИЛСЯ и выполнился", "файл пришёл, но не выполнился");
+  };
+  s.onerror = function () { say("r3", false, "", "НЕ ЗАГРУЗИЛСЯ"); };
+  document.head.appendChild(s);
+  setTimeout(function () {
+    var el = document.getElementById("r3");
+    if (el.className.indexOf("wait") >= 0) say("r3", false, "", "НЕ ОТВЕТИЛ за 10 с (похоже на замедление Cloudflare)");
+  }, 10000);
+})();
+</script>
+</body>
+</html>
