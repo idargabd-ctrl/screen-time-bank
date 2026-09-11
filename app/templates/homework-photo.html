@@ -2,7 +2,6 @@
 {% block title %}Домашка{% endblock %}
 
 {% block body %}
-<div class="gap"></div>
 {% if what == "diary" %}
   <h1>Покажи дневник</h1>
   <p class="muted">
@@ -17,24 +16,31 @@
   </p>
 {% endif %}
 
+<div class="stack">
 {% if error %}
-  <div class="note bad">{{ error }}</div>
+  <div class="note note--bad">{{ error }}</div>
 {% endif %}
 
 {# capture="environment" открывает заднюю камеру сразу, минуя галерею:
    снимок делается здесь и сейчас. Отправка — сама, как только снимок есть,
    чтобы не было второго шага «а теперь нажми ещё сюда». #}
-<form method="post" action="/homework" enctype="multipart/form-data" id="photo-form">
+<form method="post" action="/homework" enctype="multipart/form-data" id="photo-form" class="shot">
   <input type="hidden" name="action" value="{{ 'nothing' if what == 'diary' else 'done' }}">
   <input type="file" name="photo" id="photo" accept="image/*" capture="environment"
          hidden required>
-  <label for="photo" class="btn wide">Сфотографировать</label>
-  <p class="muted center" id="hint" style="margin-top:12px">Откроется камера</p>
-  <button class="btn ghost wide" type="submit" id="send" hidden>Отправить</button>
+  <div class="shot__frame" id="frame">
+    <svg class="icon icon--lg"><use href="/static/icons.svg#i-camera"></use></svg>
+  </div>
+  <label for="photo" class="btn btn--lg btn--wide">
+    <svg class="icon"><use href="/static/icons.svg#i-camera"></use></svg>
+    Сфотографировать
+  </label>
+  <p class="muted t-secondary" id="hint">Откроется камера</p>
+  <button class="btn btn--ghost btn--wide" type="submit" id="send" hidden>Отправить</button>
 </form>
 
-<div class="gap"></div>
-<a class="link center" href="/" style="display:block">Назад</a>
+<a class="btn btn--ghost btn--wide" href="/">Назад</a>
+</div>
 
 <script>
 (function () {
@@ -42,9 +48,17 @@
   var form = document.getElementById("photo-form");
   var hint = document.getElementById("hint");
   var send = document.getElementById("send");
+  var frame = document.getElementById("frame");
   input.addEventListener("change", function () {
     if (!input.files || !input.files.length) return;
-    hint.textContent = "Отправляю…";
+    // Снимок показываем в рамке как есть, без фильтров — пока уходит.
+    if (window.URL && URL.createObjectURL) {
+      var img = document.createElement("img");
+      img.alt = "снимок";
+      img.src = URL.createObjectURL(input.files[0]);
+      frame.replaceChildren(img);
+    }
+    hint.textContent = "Отправляю";
     send.hidden = false;      // на случай, если автоотправка не сработает
     form.submit();
   });

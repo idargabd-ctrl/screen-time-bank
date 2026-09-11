@@ -2,84 +2,87 @@
 {% block title %}{{ item.title }}{% endblock %}
 
 {% block body %}
-<div class="top">
+<div class="screen-head">
   <h1>{{ item.title }}</h1>
-  <span class="who">+{{ item.reward_minutes }} мин за миссию</span>
+  <span class="screen-head__who">+{{ item.reward_minutes }} мин за миссию</span>
 </div>
 
 {# Прогресс по карточкам. Показываем, сколько всего шагов, чтобы конец был
    виден заранее: у миссии есть ясная точка остановки, а не бесконечная лента. #}
 <div class="steps">
   {% for n in range(1, state.total + 1) %}
-    <span class="step {{ 'done' if n <= state.stage else ('now' if n == state.stage + 1 else '') }}">{{ n }}</span>
+    <span class="step {{ 'step--done' if n <= state.stage else ('step--now' if n == state.stage + 1 else '') }}"><span>{{ n }}</span></span>
   {% endfor %}
-  <span class="steps-label">карточка {{ state.stage + 1 }} из {{ state.total }}</span>
+  <span class="steps__label">карточка {{ state.stage + 1 }} из {{ state.total }}</span>
 </div>
 
 <h2>{{ state.card.title }}</h2>
 
+<div class="stack">
+
+{# Условие — панель с акцентной полосой. Декор внутрь условия не заходит. #}
 {% if state.card.intro %}
-  <div class="intro">{{ state.card.intro }}</div>
+  <div class="panel panel--marked">{{ state.card.intro }}</div>
 {% endif %}
 
 {# Разбор предыдущей попытки этой же карточки. Правильных ответов здесь нет —
-   только что не сошлось и подсказка к вопросу. #}
+   только что не сошлось и подсказка к вопросу. Ошибка — развилка, не
+   наказание, поэтому плашка не красная. #}
 {% if judgement %}
-  <div class="note bad">
+  <div class="note note--stuck">
     <b>Пока не сходится: {{ judgement.correct }} из {{ judgement.total }}.</b>
     Посмотри разбор ниже, можешь взять подсказку и попробовать снова.
   </div>
   {% for d in judgement["items"] %}
-    <div class="q {{ 'right' if d.ok else 'wrong' }}">
-      <div class="verdict">{{ "в точку" if d.ok else "не сошлось" }}</div>
-      <p>{{ d.prompt }}</p>
-      <div class="given">Твой ответ: {{ d.given if d.given else "— пусто —" }}</div>
-      {% if d.hint %}<div class="hint">{{ d.hint }}</div>{% endif %}
+    <div class="q {{ 'q--right' if d.ok else 'q--wrong' }} {% if not d.given %}q--empty{% endif %}">
+      <div class="q__verdict">{{ "в точку" if d.ok else "не сошлось" }}</div>
+      <p class="q__prompt">{{ d.prompt }}</p>
+      <div class="q__given">Твой ответ: {{ d.given if d.given else "пусто" }}</div>
+      {% if d.hint %}<div class="q__hint">{{ d.hint }}</div>{% endif %}
     </div>
   {% endfor %}
 {% endif %}
 
-<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off">
+<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off" class="stack">
   <input type="hidden" name="attempt_id" value="{{ state.attempt_id }}">
 
   {% for q in state.card.questions %}
     <div class="q">
-      <span class="num">{{ q.n }}</span>
-      <p>{{ q.prompt }}</p>
-      <input type="text" name="q{{ q.n }}" inputmode="text"
+      <span class="q__num"><span>{{ q.n }}</span></span>
+      <p class="q__prompt"><label for="q{{ q.n }}">{{ q.prompt }}</label></p>
+      <input class="input" type="text" id="q{{ q.n }}" name="q{{ q.n }}" inputmode="text"
              autocapitalize="off" spellcheck="false">
     </div>
   {% endfor %}
 
-  <button class="btn wide" type="submit">Ответить</button>
+  <button class="btn btn--wide btn--lg" type="submit">Ответить</button>
 </form>
 
 {# Подсказки. Открываются по одной и ничего не стоят: смысл платы за помощь
    был бы в том, чтобы ребёнок её не просил, а нужно ровно обратное. #}
 {% if state.card.hints_total %}
-  <div class="gap"></div>
   <div class="hints">
-    <div class="hints-head">
-      Подсказки — бесплатно, награда не уменьшается
-      <span class="muted">{{ state.card.hints_open }} из {{ state.card.hints_total }}</span>
+    <div class="hints__head">
+      <span><span class="hints__free">Подсказки — бесплатно,</span> награда не уменьшается</span>
+      <span>{{ state.card.hints_open }} из {{ state.card.hints_total }}</span>
     </div>
 
     {% for h in state.card.hints %}
-      <div class="hint-open">{{ h }}</div>
+      <div class="hint">{{ h }}</div>
     {% endfor %}
 
     {% if state.card.hints_open < state.card.hints_total %}
       <form method="post" action="/hint/{{ item.assignment_id }}">
-        <button class="btn ghost wide" type="submit">
+        <button class="btn btn--ghost btn--wide" type="submit">
           {% if state.card.hints_open %}Ещё подсказку{% else %}Подсказку{% endif %}
         </button>
       </form>
     {% else %}
-      <div class="muted">Подсказки закончились. Попробуй разобрать по частям.</div>
+      <div class="muted t-secondary">Подсказки закончились. Попробуй разобрать по частям.</div>
     {% endif %}
   </div>
 {% endif %}
 
-<div class="gap"></div>
-<a class="btn ghost wide" href="/">Выйти, шаги сохранятся</a>
+<a class="btn btn--ghost btn--wide" href="/">Выйти, шаги сохранятся</a>
+</div>
 {% endblock %}

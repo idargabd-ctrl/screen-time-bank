@@ -6,19 +6,30 @@
 
 {% if j.passed %}
   <h1>Изи. {{ j.correct }} из {{ j.total }}</h1>
-  <div class="board">
-    <div class="label">
+{% else %}
+  <h1>Мимо. {{ j.correct }} из {{ j.total }}</h1>
+{% endif %}
+
+<div class="stack">
+
+{% if j.passed %}
+  <div class="board {% if not result.balance.gate_open %}board--locked{% endif %}">
+    <div class="board__label">
       {% if result.granted %}Начислено{% else %}За это задание уже начислено{% endif %}
     </div>
-    <div class="big">+{{ item.reward_minutes if item else result.minutes }}<small> мин</small></div>
-    <div class="stats">
-      <div class="stat"><b>{{ result.balance.earned }}</b><span>всего за сегодня</span></div>
+    <div class="board__value {% if not result.balance.gate_open %}board__value--locked{% endif %}">
+      +{{ item.reward_minutes if item else result.minutes }}<small>мин</small>
+    </div>
+    <div class="board__stats board__stats--2">
+      <div class="stat {% if not result.balance.gate_open %}stat--locked{% endif %}">
+        <b>{{ result.balance.earned }}</b><span>всего за сегодня</span>
+      </div>
       <div class="stat"><b>{{ result.balance.target }}</b><span>минут на планшете</span></div>
     </div>
   </div>
 
   {% if not result.balance.gate_open %}
-    <div class="note locked">
+    <div class="note note--locked">
       <b>Минуты записаны, но заперты.</b>
       Отметь домашку на главной — и они уйдут на планшет.
     </div>
@@ -26,41 +37,43 @@
 
   {# Добровольная оценка — одна, в конце, как просит методика. Можно не отвечать:
      кнопка «К заданиям» рядом и ничего не теряется. #}
-  <div class="note rate">
-    <b>Как тебе задание?</b> <span class="muted">Можно не отвечать.</span>
-    <form method="post" action="/rate/{{ attempt_id }}" class="row" style="margin-top:10px">
-      <button class="btn ghost" type="submit" name="rating" value="boring">Скучно</button>
-      <button class="btn ghost" type="submit" name="rating" value="ok">Нормально</button>
-      <button class="btn ghost" type="submit" name="rating" value="fun">Интересно</button>
+  <div class="rate">
+    <div class="rate__head"><b>Как тебе задание?</b> <span class="muted t-secondary">Можно не отвечать.</span></div>
+    <form method="post" action="/rate/{{ attempt_id }}" class="rate__opts">
+      <button class="btn btn--ghost" type="submit" name="rating" value="boring">Скучно</button>
+      <button class="btn btn--ghost" type="submit" name="rating" value="ok">Нормально</button>
+      <button class="btn btn--ghost" type="submit" name="rating" value="fun">Интересно</button>
     </form>
   </div>
-  
 {% else %}
-  <h1>Мимо. {{ j.correct }} из {{ j.total }}</h1>
-  <div class="note bad">
+  {# Ошибка — развилка, не наказание: минуты не отнимаются, красного нет. #}
+  <div class="note note--stuck">
     <b>Пока не зачтено.</b>
     Посмотри, где не сошлось, и попробуй снова — вопросы будут другие,
     так что придётся разобраться, а не угадать.
   </div>
 {% endif %}
 
-<h2>Разбор</h2>
-
-{% for d in child_view["items"] %}
-  <div class="q {{ 'right' if d.ok else 'wrong' }}">
-    <span class="num">{{ d.n }}</span>
-    <div class="verdict">{{ "в точку" if d.ok else "не сошлось" }}</div>
-    <p>{{ d.prompt }}</p>
-    <div class="given">Твой ответ: {{ d.given if d.given else "— пусто —" }}</div>
-    {% if d.hint %}<div class="hint">{{ d.hint }}</div>{% endif %}
+<div>
+  <h2>Разбор</h2>
+  <div class="stack-tight">
+  {% for d in child_view["items"] %}
+    <div class="q {{ 'q--right' if d.ok else 'q--wrong' }} {% if not d.given %}q--empty{% endif %}">
+      <span class="q__num"><span>{{ d.n }}</span></span>
+      <div class="q__verdict">{{ "в точку" if d.ok else "не сошлось" }}</div>
+      <p class="q__prompt">{{ d.prompt }}</p>
+      <div class="q__given">Твой ответ: {{ d.given if d.given else "пусто" }}</div>
+      {% if d.hint %}<div class="q__hint">{{ d.hint }}</div>{% endif %}
+    </div>
+  {% endfor %}
   </div>
-{% endfor %}
+</div>
 
-<div class="gap"></div>
 <div class="row">
   {% if not j.passed and item %}
-    <a class="btn" href="/task/{{ item.assignment_id }}">Попробовать снова</a>
+    <a class="btn btn--lg" href="/task/{{ item.assignment_id }}">Попробовать снова</a>
   {% endif %}
-  <a class="btn ghost" href="/">К заданиям</a>
+  <a class="btn btn--ghost btn--lg" href="/">К заданиям</a>
+</div>
 </div>
 {% endblock %}

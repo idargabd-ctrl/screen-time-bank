@@ -1,316 +1,643 @@
 /*
-  Оформление детской части.
+  Банк времени — дизайн-система, единый файл.
+  Собран из tokens/ и css/ дизайн-системы. Порядок секций обязателен:
+  темы после базовых токенов, паттерны после примитивов.
 
-  Ориентир — не «школьный сайт», а игровой интерфейс: тёмный фон, крупные
-  скруглённые блоки, жирный рубленый шрифт, один кислотный акцент. Никаких
-  звёздочек и похвал: главная цифра на экране — минуты, всё остальное вокруг
-  неё.
+  Кладётся в app/static/style.css вместо текущего файла.
+  Рядом: app/static/fonts/ (7 файлов woff2) и app/static/icons.svg.
 
-  Планшет держат в руках, поэтому кнопки крупные, а шрифт не мельче 16px.
+  Внешних запросов нет ни одного: шрифты, иконки и видео — со своего домена.
+  Карта «старый класс → новый» и чек-лист доступности — в handoff.md.
 */
 
+/* ========================================================================
+   01. Шрифты
+   ======================================================================== */
+
+/* Шрифты. Файлы со своего домена, внешних запросов нет (§6.1 брифа).
+   font-display: swap — по домашнему Wi-Fi текст не ждёт шрифт.
+   Наборы: кириллица + латиница, gwfh.mranftl.com, лицензия OFL. */
+
+/* Golos Text — основной текст. 400 / 500 / 700 */
+@font-face { font-family: "Golos Text"; font-style: normal; font-weight: 400; font-display: swap; src: url("/static/fonts/golos-text-400.woff2") format("woff2"); }
+@font-face { font-family: "Golos Text"; font-style: normal; font-weight: 500; font-display: swap; src: url("/static/fonts/golos-text-500.woff2") format("woff2"); }
+@font-face { font-family: "Golos Text"; font-style: normal; font-weight: 700; font-display: swap; src: url("/static/fonts/golos-text-700.woff2") format("woff2"); }
+
+/* Unbounded — числа, заголовки, подписи кнопок. 400 / 500 / 700 / 800 */
+@font-face { font-family: "Unbounded"; font-style: normal; font-weight: 400; font-display: swap; src: url("/static/fonts/unbounded-400.woff2") format("woff2"); }
+@font-face { font-family: "Unbounded"; font-style: normal; font-weight: 500; font-display: swap; src: url("/static/fonts/unbounded-500.woff2") format("woff2"); }
+@font-face { font-family: "Unbounded"; font-style: normal; font-weight: 700; font-display: swap; src: url("/static/fonts/unbounded-700.woff2") format("woff2"); }
+@font-face { font-family: "Unbounded"; font-style: normal; font-weight: 800; font-display: swap; src: url("/static/fonts/unbounded-800.woff2") format("woff2"); }
+
+
+/* ========================================================================
+   02. Токены: цвет (тёмная тема — основная)
+   ======================================================================== */
+
+/* Цвет. Тёмная тема — основная (вечер, тёмная комната).
+   Имена семантические: значение может совпадать, роль — нет. */
 :root {
-  --bg: #0e1116;
-  --card: #171c24;
-  --card-2: #1e242e;
-  --line: #2a323f;
-  --text: #e8edf4;
-  --dim: #8b97a8;
-  --acid: #b8ff2e;
-  --acid-dark: #7fb800;
-  --warn: #ffb020;
-  --bad: #ff5c5c;
-  --radius: 18px;
+  /* Поверхности, 4 уровня */
+  --surface-page: #0b0e14;
+  --surface-panel: #121824;
+  --surface-raised: #172032;
+  --surface-sunken: #070a10;
+  --surface-overlay: rgba(7, 10, 16, .72);
+
+  /* Текст */
+  --text-primary: #e6ecf5;
+  --text-secondary: #8d9cb5;
+  --text-on-accent: #04120e;
+  --text-on-danger: #1a0508;
+  --text-disabled: #5a677d;
+
+  /* Границы: в тёмной теме тень не работает, глубину держат линии */
+  --border-quiet: #1e2739;
+  --border-default: #28354b;
+  --border-strong: #3c4c68;
+
+  /* Акценты и семантика */
+  --accent: #3df5c4;         /* главное действие */
+  --accent-deep: #0f7f68;    /* граница, фокус, «тихий» акцент */
+  --accent-wash: rgba(61, 245, 196, .10);
+  --minutes: #3df5c4;        /* цвет валюты. Не обязан совпадать с accent */
+  --minutes-locked: #ffb020; /* заработано, но заперто воротами домашки */
+  --success: #3df5c4;
+  --success-wash: rgba(61, 245, 196, .10);
+  --warning: #ffb020;
+  --warning-wash: rgba(255, 176, 32, .10);
+  --danger: #ff4d6d;
+  --danger-wash: rgba(255, 77, 109, .10);
+  --info: #6ea8ff;
+  --info-wash: rgba(110, 168, 255, .10);
+  --locked: #ffb020;
+  --locked-wash: rgba(255, 176, 32, .09);
+
+  /* Три состояния выдачи минут. Равновесный вес: «не доехало» — не красное */
+  --delivery-pending: #6ea8ff;
+  --delivery-confirmed: #3df5c4;
+  --delivery-stuck: #ff8a5c;
+
+  /* Четыре состояния навыка */
+  --skill-untried: #3c4c68;
+  --skill-helped: #6ea8ff;
+  --skill-solo: #3df5c4;
+  --skill-again: #b8ff2e;
+
+  /* Фокус с клавиатуры — отдельный токен, не акцент */
+  --focus: #9fdcff;
+  --focus-shadow: rgba(159, 220, 255, .35);
+
+  --scrim: rgba(4, 6, 10, .66);
+  color-scheme: dark;
 }
 
-* { box-sizing: border-box; }
 
+/* ========================================================================
+   03. Токены: светлая тема
+   ======================================================================== */
+
+/* Светлая тема. Полноценная рабочая, не «инверсия».
+   Включается атрибутом на <html>: <html data-theme="light"> */
+[data-theme="light"] {
+  --surface-page: #eceff5;
+  --surface-panel: #ffffff;
+  --surface-raised: #e3e8f1;
+  --surface-sunken: #d8dde7;
+  --surface-overlay: rgba(255, 255, 255, .82);
+
+  --text-primary: #0d1219;
+  --text-secondary: #4e5b70;
+  --text-on-accent: #ffffff;
+  --text-on-danger: #ffffff;
+  --text-disabled: #8b97a8;
+
+  --border-quiet: #dbe1ea;
+  --border-default: #c2ccda;
+  --border-strong: #94a2b6;
+
+  --accent: #00705a;
+  --accent-deep: #004d3e;
+  --accent-wash: rgba(0, 112, 90, .10);
+  --minutes: #00604e;
+  --minutes-locked: #8a5300;
+  --success: #00705a;
+  --success-wash: rgba(0, 112, 90, .10);
+  --warning: #8a5300;
+  --warning-wash: rgba(138, 83, 0, .10);
+  --danger: #b3122f;
+  --danger-wash: rgba(179, 18, 47, .09);
+  --info: #10479f;
+  --info-wash: rgba(16, 71, 159, .09);
+  --locked: #8a5300;
+  --locked-wash: rgba(138, 83, 0, .09);
+
+  --delivery-pending: #10479f;
+  --delivery-confirmed: #00705a;
+  --delivery-stuck: #9a4310;
+
+  --skill-untried: #94a2b6;
+  --skill-helped: #10479f;
+  --skill-solo: #00705a;
+  --skill-again: #4a6a00;
+
+  --focus: #10479f;
+  --focus-shadow: rgba(16, 71, 159, .28);
+
+  --scrim: rgba(13, 18, 25, .44);
+  color-scheme: light;
+}
+
+
+/* ========================================================================
+   04. Токены: тематический слой мастерской
+   ======================================================================== */
+
+/* Тематический слой мастерской (§4, 3.1).
+   Правило системы: тема меняет РОВНО два токена — --accent и --accent-deep.
+   Всё остальное вычисляется от них. Если теме понадобился третий токен,
+   это не тема, а новый дизайн.
+   Выключатель сюжета (§4, 3.2) = снять атрибут data-workshop. */
+[data-workshop="transport"] { --accent: #4db5ff; --accent-deep: #0f5c96; }
+[data-workshop="building"]  { --accent: #ffb020; --accent-deep: #8a5300; }
+[data-workshop="economy"]   { --accent: #3df5c4; --accent-deep: #0f7f68; }
+[data-workshop="animals"]   { --accent: #b8ff2e; --accent-deep: #5f8a00; }
+[data-workshop="space"]     { --accent: #b79cff; --accent-deep: #5a3fb0; }
+
+
+/* ========================================================================
+   05. Токены: типографика
+   ======================================================================== */
+
+/* Типографика. Шрифт системный — требование §6.1 (никаких внешних ресурсов),
+   ноль килобайт по домашнему Wi-Fi. Если однажды появится woff2 в /static,
+   меняется только --font-core. Нижняя граница основного текста — 16 px. */
+:root {
+  /* Текст. Golos Text — из макета, который выбрал сын. Файлы в assets/fonts,
+     @font-face в tokens/fonts.css. Системный стек остаётся запасным. */
+  --font-core: "Golos Text", "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+
+  /* Числа, заголовки, подписи кнопок, номера шагов. Unbounded — она и даёт
+     «не школьный» характер. Для основного текста не годится: дисплейная. */
+  --font-display: "Unbounded", "Segoe UI", Roboto, system-ui, sans-serif;
+  /* Системный моно-стек. Файлов в проекте нет и подключать нечего:
+     внешние ресурсы по ссылке запрещены (§6.1 брифа). */
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  /* 7 ступеней: кегль / интерлиньяж / начертание / межбуквенное */
+  --type-display: var(--font-display); /* роль: числа, h1, h2, подписи кнопок */
+  --type-counter-size: 56px;   --type-counter-lh: 1;    --type-counter-weight: 800; --type-counter-ls: -.04em;
+  --type-h1-size: 19px;        --type-h1-lh: 1.25;      --type-h1-weight: 700;      --type-h1-ls: -.01em;
+  --type-h2-size: 14px;        --type-h2-lh: 1.3;       --type-h2-weight: 700;      --type-h2-ls: .05em;
+  --type-body-size: 17px;      --type-body-lh: 1.45;    --type-body-weight: 500;    --type-body-ls: 0;
+  --type-secondary-size: 15px; --type-secondary-lh: 1.4;--type-secondary-weight: 500;--type-secondary-ls: 0;
+  --type-caption-size: 12px;   --type-caption-lh: 1.25; --type-caption-weight: 700; --type-caption-ls: .14em;
+  --type-mono-size: 14px;      --type-mono-lh: 1.4;     --type-mono-weight: 500;    --type-mono-ls: 0;
+
+  /* Числа всегда табличные: счётчик минут не должен дёргаться при смене цифр */
+  --numeric: tabular-nums; /* @kind other */
+}
+
+
+/* ========================================================================
+   06. Токены: пространство
+   ======================================================================== */
+
+/* Пространство. Шкала от 4 px, 8 ступеней. Никаких 9, 11, 13, 17. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
+
+  /* Прикладные */
+  --gutter-screen: var(--space-4);   /* поля экрана на телефоне и планшете */
+  --gap-stack: var(--space-3);       /* между блоками в потоке */
+  --gap-tight: var(--space-2);       /* внутри блока */
+  --width-content: 720px;            /* максимум колонки */
+  --width-phone: 360px;              /* опорный размер родительской части */
+}
+
+
+/* ========================================================================
+   07. Токены: форма
+   ======================================================================== */
+
+/* Форма. Направление B: срез угла вместо скругления.
+   Скругления оставлены минимальными — они гасят «игровой» характер панели. */
+:root {
+  --radius-0: 0px;
+  --radius-1: 2px;
+  --radius-2: 4px;
+  --radius-pill: 999px;
+
+  /* Срезы. Применяются через clip-path, см. .cut-* в primitives.css */
+  --cut-sm: 8px;
+  --cut-md: 10px;
+  --cut-lg: 14px;
+
+  /* Границы */
+  --stroke-hair: 1px;
+  --stroke-mark: 3px;   /* левая отбивка плашки, полоса состояния */
+
+  /* «Тени» тёмной темы — это границы и подсветка, не blur */
+  --elevation-flat: none;
+  --elevation-panel: inset 0 1px 0 rgba(255, 255, 255, .03);
+  --elevation-modal: 0 16px 40px rgba(0, 0, 0, .55);
+  --glow-accent: 0 0 24px rgba(61, 245, 196, .28); /* @kind shadow */
+}
+[data-theme="light"] {
+  --elevation-panel: 0 1px 2px rgba(13, 18, 25, .06);
+  --elevation-modal: 0 16px 40px rgba(13, 18, 25, .18);
+  --glow-accent: none; /* @kind shadow */
+}
+
+
+/* ========================================================================
+   08. Токены: движение
+   ======================================================================== */
+
+/* Движение. Три длительности, две кривые.
+   Анимируется: изменение числа минут, смена статуса выдачи, раскрытие
+   подсказки, нажатие.
+   Не анимируется никогда: появление условия задачи, переход между карточками
+   миссии, появление вопросов, результат проверки. Ребёнок не должен ждать
+   анимацию, чтобы прочитать задание.
+   Пропускаемость: любая анимация длиннее 200 мс обязана иметь конечное
+   состояние, достижимое мгновенно. */
+:root {
+  --dur-press: 90ms; /* @kind other */    /* нажатие, наведение */
+  --dur-base: 180ms; /* @kind other */    /* раскрытие, смена плашки */
+  --dur-count: 420ms; /* @kind other */   /* перекат числа минут */
+  --ease-out: cubic-bezier(.2, .7, .3, 1); /* @kind other */
+  --ease-inout: cubic-bezier(.5, 0, .3, 1); /* @kind other */
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-press: 0ms; /* @kind other */ --dur-base: 0ms; /* @kind other */ --dur-count: 0ms; /* @kind other */ }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+
+/* ========================================================================
+   09. Токены: цели нажатия
+   ======================================================================== */
+
+/* Цели нажатия. Планшет держат в руках, часто лёжа. */
+:root {
+  --target-min: 48px;      /* абсолютный минимум, ниже нельзя */
+  --target-comfort: 56px;  /* главные действия экрана */
+  --target-gap: 8px;       /* минимальный зазор между целями */
+  --focus-width: 3px;
+  --focus-offset: 2px;
+}
+
+
+/* ========================================================================
+   10. База: документ, роли текста, фокус
+   ======================================================================== */
+
+/* Базовый слой: сброс, документ, типографические роли, фокус. */
+*, *::before, *::after { box-sizing: border-box; }
+/* Атрибут hidden сильнее любого display у примитивов (.btn--wide и т. п.). */
+[hidden] { display: none !important; }
 html, body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 500 17px/1.45 "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font: var(--type-body-weight) var(--type-body-size)/var(--type-body-lh) var(--font-core);
+  font-variant-numeric: var(--numeric);
   -webkit-text-size-adjust: 100%;
 }
-
-.wrap {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 20px 16px 56px;
+.wrap { max-width: var(--width-content); margin: 0 auto; padding: var(--space-5) var(--gutter-screen) var(--space-8); }
+h1, h2, h3 { margin: 0 0 var(--space-3); }
+h1 { font: var(--type-h1-weight) var(--type-h1-size)/var(--type-h1-lh) var(--font-display); letter-spacing: var(--type-h1-ls); }
+h2 { font: var(--type-h2-weight) var(--type-h2-size)/var(--type-h2-lh) var(--font-display); letter-spacing: var(--type-h2-ls); text-transform: uppercase; }
+p { margin: 0 0 var(--space-3); text-wrap: pretty; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:hover { color: var(--text-primary); }
+.t-counter { font: var(--type-counter-weight) var(--type-counter-size)/var(--type-counter-lh) var(--font-display); letter-spacing: var(--type-counter-ls); font-variant-numeric: var(--numeric); }
+.t-secondary { font-size: var(--type-secondary-size); line-height: var(--type-secondary-lh); }
+.t-caption { font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-lh) var(--font-core); letter-spacing: var(--type-caption-ls); text-transform: uppercase; }
+.t-mono { font: var(--type-mono-weight) var(--type-mono-size)/var(--type-mono-lh) var(--font-mono); }
+.muted { color: var(--text-secondary); }
+.center { text-align: center; }
+.stack { display: grid; gap: var(--gap-stack); }
+.stack-tight { display: grid; gap: var(--gap-tight); }
+.row { display: flex; gap: var(--target-gap); flex-wrap: wrap; }
+.row > * { flex: 1 1 140px; }
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: var(--focus-width) solid var(--focus);
+  outline-offset: var(--focus-offset);
 }
+/* Срезанный угол — основной формообразующий приём направления B. */
+.cut-sm { clip-path: polygon(0 var(--cut-sm), var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%); }
+.cut-md { clip-path: polygon(0 var(--cut-md), var(--cut-md) 0, 100% 0, 100% calc(100% - var(--cut-md)), calc(100% - var(--cut-md)) 100%, 0 100%); }
+.cut-lg { clip-path: polygon(0 var(--cut-lg), var(--cut-lg) 0, 100% 0, 100% calc(100% - var(--cut-lg)), calc(100% - var(--cut-lg)) 100%, 0 100%); }
 
-h1, h2, h3 { margin: 0 0 12px; font-weight: 800; letter-spacing: -0.02em; }
-h1 { font-size: 27px; }
-h2 { font-size: 21px; }
 
-a { color: var(--acid); }
+/* ========================================================================
+   11. Слой 2: примитивы
+   ======================================================================== */
 
-/* ---- Табло ------------------------------------------------------------ */
+/* Примитивы (слой 2). Все размеры — из токенов, ни одного случайного числа. */
 
-.board {
-  background: linear-gradient(160deg, var(--card-2), var(--card));
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.board .big {
-  font-size: 64px;
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  color: var(--acid);
-}
-.board .big small { font-size: 22px; font-weight: 800; color: var(--dim); }
-
-.board .label { color: var(--dim); font-size: 15px; margin-bottom: 4px; }
-
-.stats {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-  flex-wrap: wrap;
-}
-.stat {
-  flex: 1 1 100px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-.stat b { display: block; font-size: 22px; font-weight: 800; }
-.stat span { color: var(--dim); font-size: 13px; }
-
-/* ---- Плашки ----------------------------------------------------------- */
-
-.note {
-  border-radius: 14px;
-  padding: 13px 15px;
-  margin-bottom: 14px;
-  border: 1px solid var(--line);
-  background: var(--card);
-  font-size: 16px;
-}
-.note.locked { border-color: var(--warn); background: rgba(255,176,32,0.09); }
-.note.sync   { border-color: var(--acid-dark); background: rgba(184,255,46,0.08); }
-.note.ok     { border-color: var(--acid-dark); background: rgba(184,255,46,0.10); }
-.note.bad    { border-color: var(--bad); background: rgba(255,92,92,0.10); }
-.note b { color: var(--text); }
-
-/* ---- Задания ---------------------------------------------------------- */
-
-.tasks { display: grid; gap: 10px; }
-
-.task {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 15px 16px;
-  text-decoration: none;
-  color: var(--text);
-}
-.task:active { transform: scale(0.99); }
-.task .mins {
-  flex: 0 0 auto;
-  min-width: 62px;
-  text-align: center;
-  font-weight: 900;
-  font-size: 19px;
-  color: var(--acid);
-  background: rgba(184,255,46,0.10);
-  border-radius: 12px;
-  padding: 9px 6px;
-  line-height: 1.1;
-}
-.task .mins em { display: block; font-size: 11px; font-style: normal; color: var(--dim); }
-.task .name { flex: 1; font-weight: 700; }
-.task .sub { color: var(--dim); font-size: 14px; font-weight: 500; margin-top: 2px; }
-.task.done { opacity: 0.55; }
-.task.done .mins { color: var(--dim); background: rgba(255,255,255,0.05); }
-
-/* ---- Кнопки ----------------------------------------------------------- */
-
+/* ---- Кнопка ------------------------------------------------------------ */
 .btn {
-  display: inline-block;
-  border: 0;
-  border-radius: 14px;
-  padding: 15px 22px;
-  font: 800 18px/1 inherit;
-  font-family: inherit;
-  background: var(--acid);
-  color: #0b0f14;
-  cursor: pointer;
-  text-decoration: none;
-  text-align: center;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: var(--target-min);
+  padding: var(--space-3) var(--space-5);
+  border: var(--stroke-hair) solid transparent;
+  border-radius: var(--radius-0);
+  font: 700 14px/1 var(--font-display); letter-spacing: .01em; text-transform: uppercase;
+  background: var(--accent); color: var(--text-on-accent);
+  text-decoration: none; cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out), filter var(--dur-press) var(--ease-out);
+  clip-path: polygon(0 var(--cut-sm), var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%);
 }
-.btn:active { transform: translateY(1px); }
-/* Кнопка-ссылка для второстепенного действия, чтобы не спорила с главными. */
+.btn:hover { filter: brightness(1.08); }
+.btn:active { transform: translateY(1px); filter: brightness(.94); }
+.btn--secondary { background: var(--surface-raised); color: var(--text-primary); border-color: var(--border-default); }
+.btn--ghost { background: transparent; color: var(--text-primary); border-color: var(--border-default); }
+.btn--danger { background: var(--danger); color: var(--text-on-danger); }
+.btn--lg { min-height: var(--target-comfort); padding: var(--space-4) var(--space-6); font-size: 16px; }
+.btn--sm { min-height: 40px; padding: var(--space-2) var(--space-4); font-size: 12px; }
+.btn--wide { display: flex; width: 100%; }
+.btn[disabled], .btn--disabled { background: var(--surface-raised); color: var(--text-disabled); border-color: var(--border-quiet); cursor: not-allowed; filter: none; transform: none; }
+.btn--busy { color: transparent; position: relative; pointer-events: none; }
+.btn--busy::after {
+  content: ""; position: absolute; width: 18px; height: 18px;
+  border: 2px solid currentColor; border-top-color: transparent; border-radius: var(--radius-pill);
+  color: var(--text-on-accent); animation: btn-spin 700ms linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
 .link {
-  background: none; border: none; padding: 6px;
-  color: var(--dim); font: inherit; font-size: 14px;
+  background: none; border: 0; padding: var(--space-2);
+  min-height: var(--target-min);
+  color: var(--text-secondary); font: 500 15px/1.4 var(--font-core);
   text-decoration: underline; cursor: pointer;
 }
-.btn.wide { display: block; width: 100%; }
-.btn.ghost {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--line);
+.link:hover { color: var(--text-primary); }
+
+/* ---- Поле ввода -------------------------------------------------------- */
+.field { display: grid; gap: var(--space-2); }
+.field__label { font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-lh) var(--font-core); letter-spacing: var(--type-caption-ls); text-transform: uppercase; color: var(--text-secondary); }
+.input {
+  width: 100%; min-height: var(--target-comfort);
+  border: var(--stroke-hair) solid var(--border-default);
+  border-radius: var(--radius-0);
+  background: var(--surface-sunken); color: var(--text-primary);
+  padding: var(--space-3) var(--space-4);
+  font: 700 19px/1.2 var(--font-core);
+  font-variant-numeric: var(--numeric);
 }
+.input::placeholder { color: var(--text-disabled); font-weight: 500; }
+.input:focus-visible { outline: var(--focus-width) solid var(--focus); outline-offset: var(--focus-offset); border-color: var(--focus); }
+.input--num { font-family: var(--font-mono); }
+/* Ошибка приходит ТОЛЬКО с сервера, после отправки: клиентской валидации нет
+   (принцип 8 — интерфейс не должен намекать на правильный ответ). */
+.input--error { border-color: var(--danger); }
+.field__error { color: var(--danger); font-size: var(--type-secondary-size); }
+.field__note { color: var(--text-secondary); font-size: var(--type-secondary-size); }
 
-.row { display: flex; gap: 10px; flex-wrap: wrap; }
-.row > * { flex: 1 1 140px; }
-
-/* ---- Вопросы ---------------------------------------------------------- */
-
-.q {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 12px;
+/* ---- Бейдж и чип -------------------------------------------------------- */
+.badge {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 4px var(--space-2);
+  font: 700 12px/1.3 var(--font-core); letter-spacing: .08em; text-transform: uppercase;
+  border: var(--stroke-hair) solid var(--border-default); color: var(--text-secondary);
+  background: var(--surface-raised);
 }
-.q .num {
-  display: inline-block;
-  min-width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.07);
-  color: var(--dim);
-  font-weight: 800;
-  font-size: 14px;
-  text-align: center;
-  line-height: 26px;
-  margin-bottom: 9px;
+.badge--accent { color: var(--accent); border-color: var(--accent-deep); background: var(--accent-wash); }
+.badge--success { color: var(--success); border-color: var(--accent-deep); background: var(--success-wash); }
+.badge--warning { color: var(--warning); border-color: var(--warning); background: var(--warning-wash); }
+.badge--danger { color: var(--danger); border-color: var(--danger); background: var(--danger-wash); }
+.badge--info { color: var(--info); border-color: var(--info); background: var(--info-wash); }
+.chip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  min-height: 40px; padding: var(--space-2) var(--space-4);
+  border: var(--stroke-hair) solid var(--border-default); background: var(--surface-panel);
+  color: var(--text-primary); font: 600 15px/1 var(--font-core); cursor: pointer;
+  clip-path: polygon(0 var(--cut-sm), var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%);
 }
-.q p { margin: 0 0 13px; font-weight: 600; }
+.chip[aria-pressed="true"], .chip--on { border-color: var(--accent-deep); background: var(--accent-wash); color: var(--accent); }
 
-input[type="text"], input[type="password"] {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: #0b0f14;
-  color: var(--text);
-  padding: 14px 15px;
-  font: 700 19px inherit;
-  font-family: inherit;
-}
-input:focus { outline: 2px solid var(--acid-dark); outline-offset: 1px; }
-
-.q.right { border-color: var(--acid-dark); }
-.q.wrong { border-color: var(--bad); }
-.q .verdict { font-weight: 800; font-size: 15px; margin-bottom: 6px; }
-.q.right .verdict { color: var(--acid); }
-.q.wrong .verdict { color: var(--bad); }
-.q .given { color: var(--dim); font-size: 15px; }
-.q .hint { margin-top: 8px; font-size: 15px; color: var(--warn); }
-
-/* ---- Мелочи ----------------------------------------------------------- */
-
-.muted { color: var(--dim); }
-.center { text-align: center; }
-.gap { height: 18px; }
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 14px;
-}
-.top .who { color: var(--dim); font-size: 15px; }
-form.inline { display: inline; }
-form.inline .btn { padding: 9px 14px; font-size: 14px; }
-
-/* ---- Видео урока ------------------------------------------------------ */
-
-video.lesson {
-  display: block;
-  width: 100%;
-  max-height: 62vh;              /* чтобы вопросы не уезжали целиком за экран */
-  background: #000;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  margin: 12px 0 14px;
-}
-/* Разбор под кнопкой: своя попытка сначала, помощь по запросу. */
-details.help { margin-bottom: 16px; }
-details.help > summary { list-style: none; }
-details.help > summary::-webkit-details-marker { display: none; }
-details.help[open] > summary { opacity: 0.7; }
-
-/* ---- Миссии ------------------------------------------------------------ */
-
-.section-note { font-size: 15px; margin: -6px 0 12px; }
-
-/* Прогресс по карточкам: конец миссии виден заранее, чтобы у неё была ясная
-   точка остановки, а не бесконечная лента заданий. */
-.steps { display: flex; align-items: center; gap: 7px; margin-bottom: 16px; }
-.step {
-  width: 30px; height: 30px; border-radius: 10px;
-  display: grid; place-items: center;
-  font-weight: 800; font-size: 14px;
-  background: rgba(255,255,255,0.05);
-  color: var(--dim);
-  border: 1px solid var(--line);
-}
-.step.done { background: rgba(184,255,46,0.15); color: var(--acid); border-color: var(--acid-dark); }
-.step.now  { background: var(--acid); color: #0b0f14; border-color: var(--acid); }
-.steps-label { color: var(--dim); font-size: 14px; margin-left: 4px; }
-
-.intro {
-  background: var(--card-2);
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--acid-dark);
-  border-radius: 14px;
-  padding: 15px 17px;
-  margin-bottom: 16px;
-  font-size: 17px;
-  line-height: 1.5;
-}
-
-.hints {
-  border: 1px dashed var(--line);
-  border-radius: var(--radius);
-  padding: 15px;
-}
-.hints-head {
-  display: flex; justify-content: space-between; gap: 10px;
-  font-size: 14px; color: var(--dim); margin-bottom: 11px;
-}
-.hint-open {
-  background: rgba(255,176,32,0.08);
-  border: 1px solid var(--warn);
-  border-radius: 12px;
-  padding: 11px 13px;
-  margin-bottom: 9px;
+/* ---- Плашка ------------------------------------------------------------- */
+.note {
+  border: var(--stroke-hair) solid var(--border-default);
+  border-left: var(--stroke-mark) solid var(--border-strong);
+  background: var(--surface-panel);
+  padding: var(--space-3) var(--space-4);
   font-size: 16px;
 }
+.note b { color: var(--text-primary); }
+.note--locked { border-left-color: var(--locked); background: var(--locked-wash); }
+.note--sync { border-left-color: var(--delivery-pending); background: var(--info-wash); }
+.note--ok { border-left-color: var(--delivery-confirmed); background: var(--success-wash); }
+.note--stuck { border-left-color: var(--delivery-stuck); background: var(--warning-wash); }
+.note--bad { border-left-color: var(--danger); background: var(--danger-wash); }
 
-/* ---- Родительская страница: снимки тетради ----------------------------- */
-
-.thumb {
-  flex: 0 0 auto;
-  width: 84px; height: 84px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(255,255,255,0.05);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--dim); font-size: 12px; text-align: center;
+/* ---- Панель ------------------------------------------------------------- */
+.panel {
+  background: var(--surface-panel);
+  border: var(--stroke-hair) solid var(--border-default);
+  box-shadow: var(--elevation-panel);
+  padding: var(--space-4);
+  clip-path: polygon(0 var(--cut-md), var(--cut-md) 0, 100% 0, 100% calc(100% - var(--cut-md)), calc(100% - var(--cut-md)) 100%, 0 100%);
 }
+.panel--raised { background: var(--surface-raised); }
+.panel--marked { position: relative; }
+.panel--marked::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--stroke-mark); background: var(--accent); }
+.divider { height: var(--stroke-hair); background: var(--border-quiet); border: 0; margin: var(--space-4) 0; }
+
+/* ---- Заголовок экрана ---------------------------------------------------- */
+.screen-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4); }
+.screen-head__who { color: var(--text-secondary); font-size: var(--type-secondary-size); }
+
+/* ---- Индикатор шагов ------------------------------------------------------ */
+.steps { display: flex; align-items: center; gap: var(--space-1); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.step {
+  width: 30px; height: 30px; display: grid; place-items: center;
+  font: 700 13px/1 var(--font-display);
+  background: var(--surface-raised); color: var(--text-secondary);
+  border: var(--stroke-hair) solid var(--border-default);
+  transform: skewX(-12deg);
+}
+.step > span { transform: skewX(12deg); }
+.step--done { background: var(--accent-wash); color: var(--accent); border-color: var(--accent-deep); }
+.step--now { background: var(--accent); color: var(--text-on-accent); border-color: var(--accent); }
+.steps__label { color: var(--text-secondary); font-size: var(--type-secondary-size); margin-left: var(--space-2); }
+
+/* ---- Таблица --------------------------------------------------------------- */
+/* На 360 px таблица переключается в карточки: горизонтального скролла нет. */
+.table { width: 100%; border-collapse: collapse; font-size: var(--type-secondary-size); }
+.table th, .table td { border-bottom: var(--stroke-hair) solid var(--border-quiet); padding: var(--space-2); text-align: left; vertical-align: top; }
+.table th { color: var(--text-secondary); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.table td { font-variant-numeric: var(--numeric); }
+@media (max-width: 520px) {
+  .table--stack thead { display: none; }
+  .table--stack tr { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1) var(--space-2); padding: var(--space-3) 0; border-bottom: var(--stroke-hair) solid var(--border-quiet); }
+  .table--stack td { border: 0; padding: 0; }
+  .table--stack td::before { content: attr(data-th) " "; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+  .table--stack td:first-child { grid-column: 1 / -1; font-weight: 800; }
+}
+
+/* ---- Загрузка и скелетон -------------------------------------------------- */
+.skeleton { background: var(--surface-raised); position: relative; overflow: hidden; min-height: 14px; }
+.skeleton::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  animation: skeleton-sweep 1.2s var(--ease-inout) infinite;
+}
+@keyframes skeleton-sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* ---- Иконки ---------------------------------------------------------------- */
+/* Спрайт со своего домена, сетка 24×24, обводка 2 px, currentColor. */
+.icon { width: 24px; height: 24px; flex: 0 0 auto; display: inline-block; vertical-align: -4px; }
+.icon--sm { width: 18px; height: 18px; vertical-align: -3px; }
+.icon--lg { width: 32px; height: 32px; }
+
+
+/* ========================================================================
+   12. Слой 3: паттерны банка времени
+   ======================================================================== */
+
+/* Паттерны (слой 3). Составные блоки, специфичные для банка времени. */
+
+/* ---- Табло минут ------------------------------------------------------- */
+.board { position: relative; background: var(--surface-panel); border: var(--stroke-hair) solid var(--border-default); padding: var(--space-4); }
+.board::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--stroke-mark); background: var(--minutes); }
+.board--locked::before { background: var(--minutes-locked); }
+.board--capped::before { background: var(--border-strong); }
+.board--unconfirmed::before { background: var(--delivery-pending); }
+.board__label { color: var(--text-secondary); font: var(--type-caption-weight) var(--type-caption-size)/var(--type-caption-lh) var(--font-core); letter-spacing: var(--type-caption-ls); text-transform: uppercase; margin-bottom: var(--space-2); }
+.board__value { font: var(--type-counter-weight) var(--type-counter-size)/var(--type-counter-lh) var(--font-display); letter-spacing: var(--type-counter-ls); color: var(--minutes); font-variant-numeric: var(--numeric); text-shadow: var(--glow-accent); }
+/* letter-spacing родителя наследуется в px и съедает пробел перед «мин» —
+   сбрасываем и отбиваем явным margin. */
+.board__value small { font-size: 16px; font-weight: 500; letter-spacing: normal; margin-left: 6px; color: var(--text-secondary); text-shadow: none; }
+.board__value--locked { color: var(--minutes-locked); }
+/* Единственная анимация числа: короткий подъём при изменении. */
+.board__value--tick { animation: board-tick var(--dur-count) var(--ease-out); }
+@keyframes board-tick { from { transform: translateY(6px); opacity: .4; } to { transform: none; opacity: 1; } }
+.board__meter { height: 6px; background: var(--surface-raised); margin: var(--space-3) 0; }
+.board__meter i { display: block; height: 100%; background: var(--minutes); transition: width var(--dur-count) var(--ease-out); }
+.board__meter--capped i { background: var(--border-strong); }
+.board__stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.board__stats--2 { grid-template-columns: repeat(2, 1fr); }
+.stat { background: var(--surface-raised); padding: var(--space-2); }
+.stat b { display: block; font: 700 17px/1.1 var(--font-display); font-variant-numeric: var(--numeric); }
+.stat span { display: block; color: var(--text-secondary); font-size: 11px; line-height: 1.25; margin-top: var(--space-1); }
+.stat--locked b { color: var(--minutes-locked); }
+
+/* ---- Статус выдачи: три состояния, равный вес ---------------------------- */
+.delivery { display: flex; align-items: center; gap: var(--space-3); border: var(--stroke-hair) solid var(--border-default); border-left: var(--stroke-mark) solid var(--border-strong); background: var(--surface-panel); padding: var(--space-3) var(--space-4); font-size: 16px; }
+.delivery__dot { width: 10px; height: 10px; flex: 0 0 auto; background: var(--border-strong); }
+.delivery--pending { border-left-color: var(--delivery-pending); background: var(--info-wash); }
+.delivery--pending .delivery__dot { background: var(--delivery-pending); animation: delivery-pulse 1.4s var(--ease-inout) infinite; }
+.delivery--confirmed { border-left-color: var(--delivery-confirmed); background: var(--success-wash); }
+.delivery--confirmed .delivery__dot { background: var(--delivery-confirmed); }
+.delivery--stuck { border-left-color: var(--delivery-stuck); background: var(--warning-wash); }
+.delivery--stuck .delivery__dot { background: var(--delivery-stuck); }
+@keyframes delivery-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* ---- Ворота домашки ------------------------------------------------------ */
+.gate { border: var(--stroke-hair) solid var(--locked); border-left: var(--stroke-mark) solid var(--locked); background: var(--locked-wash); padding: var(--space-4); }
+.gate--done { border-color: var(--border-default); border-left-color: var(--success); background: var(--success-wash); }
+.gate--revoked { border-color: var(--border-default); border-left-color: var(--danger); background: var(--danger-wash); }
+.gate--off { border-color: var(--border-default); border-left-color: var(--border-strong); background: var(--surface-panel); }
+.gate__title { font-weight: 800; margin-bottom: var(--space-2); }
+.gate__actions { display: flex; gap: var(--target-gap); margin-top: var(--space-3); }
+.gate__actions > * { flex: 1; }
+.gate__aside { display: block; text-align: center; margin-top: var(--space-2); }
+
+/* ---- Карточка задания ----------------------------------------------------- */
+.task { display: flex; align-items: stretch; background: var(--surface-panel); border: var(--stroke-hair) solid var(--border-default); color: var(--text-primary); text-decoration: none; min-height: var(--target-comfort); }
+.task:hover { border-color: var(--border-strong); }
+.task:active { transform: translateY(1px); }
+.task__mins { min-width: 72px; display: grid; place-content: center; text-align: center; background: var(--surface-raised); padding: var(--space-3) var(--space-2); font: 700 16px/1.1 var(--font-display); color: var(--minutes); font-variant-numeric: var(--numeric); }
+.task__mins em { display: block; font: 700 10px/1.2 var(--font-core); font-style: normal; letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary); margin-top: var(--space-1); }
+.task__body { flex: 1; padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; justify-content: center; }
+.task__name { font-weight: 700; }
+.task__sub { color: var(--text-secondary); font-size: var(--type-secondary-size); margin-top: 2px; }
+.task__tags { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-top: var(--space-2); }
+.task--started { border-left: var(--stroke-mark) solid var(--accent); }
+.task--earned { opacity: .55; }
+.task--earned .task__mins { color: var(--text-secondary); }
+.task--partial .task__mins { color: var(--warning); }
+.task--zero .task__mins { color: var(--text-secondary); }
+.task--reserved .task__mins { color: var(--accent); }
+.task--repeat { border-left: var(--stroke-mark) solid var(--info); }
+.task--paper { border-left: var(--stroke-mark) solid var(--border-strong); }
+.task--check { border-left: var(--stroke-mark) solid var(--warning); }
+
+/* ---- Блок вопроса ---------------------------------------------------------- */
+/* Правильный ответ не появляется ни в одном состоянии (принцип 8). */
+.q { background: var(--surface-panel); border: var(--stroke-hair) solid var(--border-default); padding: var(--space-4); }
+.q__num { display: inline-grid; place-items: center; min-width: 26px; height: 26px; background: var(--surface-raised); color: var(--text-secondary); font: 700 13px/1 var(--font-display); margin-bottom: var(--space-2); transform: skewX(-12deg); }
+.q__num > span { transform: skewX(12deg); }
+.q__prompt { margin: 0 0 var(--space-3); font-weight: 600; }
+.q__verdict { font: 700 15px/1.2 var(--font-display); margin-bottom: var(--space-1); }
+.q__given { color: var(--text-secondary); font-size: var(--type-secondary-size); }
+.q__hint { margin-top: var(--space-2); font-size: var(--type-secondary-size); color: var(--warning); }
+.q--right { border-color: var(--accent-deep); }
+.q--right .q__verdict { color: var(--success); }
+.q--wrong { border-color: var(--border-strong); }
+.q--wrong .q__verdict { color: var(--delivery-stuck); }
+.q--empty .q__given { font-style: italic; }
+
+/* ---- Подсказки --------------------------------------------------------------- */
+.hints { border: var(--stroke-hair) dashed var(--border-default); padding: var(--space-4); }
+.hints__head { display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--type-secondary-size); color: var(--text-secondary); margin-bottom: var(--space-3); }
+.hints__free { color: var(--accent); font-weight: 700; }
+.hint { border: var(--stroke-hair) solid var(--warning); border-left: var(--stroke-mark) solid var(--warning); background: var(--warning-wash); padding: var(--space-3); margin-bottom: var(--space-2); font-size: 16px; animation: hint-open var(--dur-base) var(--ease-out); }
+@keyframes hint-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* ---- Видеоразбор -------------------------------------------------------------- */
+.help > summary { list-style: none; cursor: pointer; }
+.help > summary::-webkit-details-marker { display: none; }
+.help[open] > summary { opacity: .7; }
+.lesson { display: block; width: 100%; max-height: 62vh; background: #000; border: var(--stroke-hair) solid var(--border-default); margin-top: var(--space-3); }
+
+/* ---- Навык: четыре состояния ------------------------------------------------- */
+.skill { display: flex; align-items: center; gap: var(--space-3); background: var(--surface-panel); border: var(--stroke-hair) solid var(--border-default); padding: var(--space-3) var(--space-4); font-size: var(--type-secondary-size); }
+.skill__bars { display: flex; gap: 3px; flex: 0 0 auto; }
+.skill__bar { width: 16px; height: 10px; background: var(--skill-untried); transform: skewX(-18deg); }
+.skill--helped .skill__bar:nth-child(-n+2) { background: var(--skill-helped); }
+.skill--solo .skill__bar:nth-child(-n+3) { background: var(--skill-solo); }
+.skill--again .skill__bar { background: var(--skill-again); }
+.skill__name { flex: 1; color: var(--text-primary); }
+.skill__state { color: var(--text-secondary); font-weight: 700; }
+
+/* ---- Добровольная оценка -------------------------------------------------------- */
+/* Пропуск — законный исход: блок не выглядит незавершённым. */
+.rate { border: var(--stroke-hair) solid var(--border-quiet); background: var(--surface-panel); padding: var(--space-3) var(--space-4); }
+.rate__head { display: flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; margin-bottom: var(--space-3); }
+.rate__opts { display: flex; gap: var(--target-gap); }
+.rate__opts > * { flex: 1; }
+.rate--answered { color: var(--text-secondary); }
+
+/* ---- Снимок с камеры --------------------------------------------------------- */
+.shot { display: grid; gap: var(--space-3); justify-items: center; text-align: center; }
+.shot__frame { width: 100%; aspect-ratio: 4 / 3; display: grid; place-items: center; background: var(--surface-raised); border: var(--stroke-hair) dashed var(--border-default); color: var(--text-secondary); }
+.shot__frame img { width: 100%; height: 100%; object-fit: cover; }
+.thumb { width: 84px; height: 84px; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; background: var(--surface-raised); color: var(--text-secondary); font-size: 12px; text-align: center; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.task.hw { cursor: default; }
-.task.hw:active { transform: none; }
 
-/* ---- Черновики на странице родителя ------------------------------------ */
-details.draft { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 10px; }
-details.draft > summary { cursor: pointer; padding: 4px 0; }
-details.draft .q { margin-top: 10px; }
-.answer { color: var(--acid); font-weight: 700; }
+/* ---- Черновик у родителя ------------------------------------------------------ */
+.draft { border: var(--stroke-hair) solid var(--border-default); background: var(--surface-panel); padding: var(--space-3) var(--space-4); }
+.draft > summary { cursor: pointer; padding: var(--space-1) 0; list-style: none; }
+.draft > summary::-webkit-details-marker { display: none; }
+/* Ответ закрыт, пока родитель не решит сам. */
+.answer-veil { border: var(--stroke-hair) dashed var(--border-default); padding: var(--space-2) var(--space-3); color: var(--text-secondary); font-size: var(--type-secondary-size); cursor: pointer; }
+.answer { color: var(--accent); font-weight: 700; }
 
-/* ---- Сводка пилота на странице родителя --------------------------------- */
-.tablewrap { overflow-x: auto; }
-table.pilot { border-collapse: collapse; width: 100%; font-size: 14px; }
-table.pilot th, table.pilot td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
-table.pilot th { color: var(--dim); font-weight: 600; }
-.note.rate .row > * { flex: 1 1 90px; padding: 10px 8px; font-size: 15px; }
+/* ---- Пустые состояния и отказы ------------------------------------------------- */
+.empty { border: var(--stroke-hair) dashed var(--border-default); background: var(--surface-panel); padding: var(--space-6) var(--space-4); text-align: center; color: var(--text-secondary); }
+.empty__title { color: var(--text-primary); font-weight: 800; margin-bottom: var(--space-2); }

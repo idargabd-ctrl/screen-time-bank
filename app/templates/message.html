@@ -2,9 +2,11 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block body %}
-<div class="gap"></div>
-<h1>{{ title }}</h1>
-<div class="note">{{ text }}</div>
-<div class="gap"></div>
-<a class="btn wide" href="/">К заданиям</a>
+<div class="stack">
+  <div class="empty">
+    <div class="empty__title">{{ title }}</div>
+    {{ text }}
+  </div>
+  <a class="btn btn--wide" href="/">К заданиям</a>
+</div>
 {% endblock %}

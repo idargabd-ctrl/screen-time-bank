@@ -2,10 +2,12 @@
 {% block title %}{{ item.title }}{% endblock %}
 
 {% block body %}
-<div class="top">
+<div class="screen-head">
   <h1>{{ item.title }}</h1>
-  <span class="who">+{{ item.reward_minutes }} мин</span>
+  <span class="screen-head__who">+{{ item.reward_minutes }} мин</span>
 </div>
+
+<div class="stack">
 
 {# Сначала своя попытка, разбор — под кнопкой. По методике до первой
    попытки нет обязательного видео: знакомую тему можно закрыть без него,
@@ -17,33 +19,50 @@
 
 {% if item.video_file %}
   <details class="help">
-    <summary class="btn ghost wide">Нужна помощь? Посмотреть разбор</summary>
+    <summary class="btn btn--ghost btn--wide">
+      <svg class="icon"><use href="/static/icons.svg#i-play"></use></svg>
+      Нужна помощь? Посмотреть разбор
+    </summary>
     {# Ролик отдаётся с нашего же домена. Он уже разрешён в Chrome у ребёнка,
        поэтому ни YouTube, ни облако подключать не требуется. preload=none:
        пока разбор закрыт, ролик не грузится. #}
     <video class="lesson" controls preload="none"
            src="/media/{{ item.video_file }}"
            playsinline controlslist="nodownload">
-      Браузер не смог открыть видео. Скажи папе.
     </video>
+    <div class="note note--stuck" id="video-stuck" hidden>
+      <b>Ролик не загрузился.</b> Это не из-за тебя — скажи папе. Задание решать можно и без него.
+    </div>
   </details>
 {% endif %}
 
-<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off">
+<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off" class="stack">
   <input type="hidden" name="attempt_id" value="{{ attempt_id }}">
 
   {% for q in questions %}
     <div class="q">
-      <span class="num">{{ q.n }}</span>
-      <p>{{ q.prompt }}</p>
-      <input type="text" name="q{{ q.n }}" inputmode="text"
+      <span class="q__num"><span>{{ q.n }}</span></span>
+      <p class="q__prompt"><label for="q{{ q.n }}">{{ q.prompt }}</label></p>
+      <input class="input" type="text" id="q{{ q.n }}" name="q{{ q.n }}" inputmode="text"
              autocapitalize="off" spellcheck="false">
     </div>
   {% endfor %}
 
-  <button class="btn wide" type="submit">Проверить</button>
+  <button class="btn btn--wide btn--lg" type="submit">Проверить</button>
 </form>
 
-<div class="gap"></div>
-<a class="btn ghost wide" href="/">Назад</a>
+<a class="btn btn--ghost btn--wide" href="/">Назад</a>
+</div>
+
+{% if item.video_file %}
+<script>
+// Сбой ролика проговариваем вслух: ребёнок выводится из-под удара,
+// задание остаётся доступным.
+(function () {
+  var v = document.querySelector(".lesson");
+  var n = document.getElementById("video-stuck");
+  if (v && n) v.addEventListener("error", function () { n.hidden = false; });
+})();
+</script>
+{% endif %}
 {% endblock %}

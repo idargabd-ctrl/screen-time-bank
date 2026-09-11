@@ -22,3 +22,4 @@ venv/
 
 # Локальные настройки Claude Code: разрешения и адреса этой машины
 .claude/settings.local.json
+*.zip

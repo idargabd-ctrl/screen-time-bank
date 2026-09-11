@@ -2,30 +2,42 @@
 {% block title %}Сегодня{% endblock %}
 
 {% block body %}
-<div class="top">
+{% set b = view.balance %}
+{% set st = delivery.status if delivery else "none" %}
+
+<div class="screen-head">
   <h1>{{ title_date }}</h1>
-  <span class="who">{{ child.name if child else "" }}</span>
+  <span class="screen-head__who">{{ child.name if child else "" }}</span>
 </div>
 
-<div class="board">
-  <div class="label">Минут на сегодня</div>
-  <div class="big" id="target">{{ view.balance.target }}<small> мин</small></div>
+<div class="stack">
 
-  <div class="stats">
+{# Табло. Полоса слева несёт состояние: минуты, заперто, потолок,
+   ещё не на планшете. Число одно — минуты, второй валюты нет. #}
+<div class="board
+  {%- if b.capped %} board--capped
+  {%- elif not b.gate_open and b.earned %} board--locked
+  {%- elif b.target > b.base and st in ('pending', 'unknown') %} board--unconfirmed{% endif %}">
+  <div class="board__label">Минут на сегодня</div>
+  <div class="board__value" id="target">{{ b.target }}<small>мин</small></div>
+  <div class="board__meter {% if b.capped %}board__meter--capped{% endif %}">
+    <i id="meter" style="width: {{ (100 * b.target / b.daily_max) | round | int if b.daily_max else 0 }}%"></i>
+  </div>
+  <div class="board__stats">
     <div class="stat">
-      <b>{{ view.balance.base }}</b>
+      <b>{{ b.base }}</b>
       <span>база каждый день</span>
     </div>
     <div class="stat">
-      <b id="hw">{{ "+" ~ view.balance.homework_bonus if view.balance.homework_bonus else "—" }}</b>
+      <b id="hw">{{ "+" ~ b.homework_bonus if b.homework_bonus else "—" }}</b>
       <span>за домашку</span>
     </div>
-    <div class="stat">
-      <b id="earned">{{ view.balance.earned }}</b>
+    <div class="stat {% if not b.gate_open and b.earned %}stat--locked{% endif %}" id="earned-stat">
+      <b id="earned">{{ b.earned }}</b>
       <span>за задания</span>
     </div>
     <div class="stat">
-      <b>{{ view.balance.daily_max }}</b>
+      <b>{{ b.daily_max }}</b>
       <span>максимум в день</span>
     </div>
   </div>
@@ -34,67 +46,75 @@
 {# Ворота домашней работы. Пока закрыты — заработанное честно показываем
    отдельно, а не прячем в ноль. Сделанная домашка сама стоит минут, и это
    видно в цифре сразу — до всяких заданий. #}
-{% if not view.balance.gate_open %}
-  <div class="note locked">
+{% if not b.gate_open %}
+  <div class="gate">
     {% if nudge %}
-      <b>Выполни, пожалуйста, в первую очередь домашку</b> — и получишь
-      +{{ view.balance.homework_minutes }} мин к своему времени.
-      {% if view.balance.earned %}
-        Заработанные {{ view.balance.earned }} мин тоже откроются.
-      {% endif %}
-    {% elif view.balance.earned %}
-      <b>Ты сделал домашку{% if policy.for_monday %} на понедельник{% endif %}?</b>
-      За неё +{{ view.balance.homework_minutes }} мин, и ещё
-      {{ view.balance.earned }} заработанных ждут её.
+      <div class="gate__title">Сначала домашка</div>
+      Отметь её — и сразу +{{ b.homework_minutes }} мин к своему времени.
+      {% if b.earned %}Заработанные {{ b.earned }} мин тоже откроются.{% endif %}
     {% else %}
-      <b>Ты сделал домашку{% if policy.for_monday %} на понедельник{% endif %}?</b>
-      За неё сразу +{{ view.balance.homework_minutes }} мин.
+      <div class="gate__title">Ты сделал домашку{% if policy.for_monday %} на понедельник{% endif %}?</div>
+      {% if b.earned %}
+        За неё +{{ b.homework_minutes }} мин, и ещё {{ b.earned }} заработанных ждут её.
+      {% else %}
+        За неё сразу +{{ b.homework_minutes }} мин.
+      {% endif %}
     {% endif %}
-    <div class="gap"></div>
-    <div class="row">
-      <a class="btn wide" href="/homework/photo">Да, сделал</a>
+    <div class="gate__actions">
+      <a class="btn btn--lg" href="/homework/photo">
+        <svg class="icon"><use href="/static/icons.svg#i-camera"></use></svg>
+        Да, сделал
+      </a>
       <form method="post" action="/homework">
         <input type="hidden" name="action" value="no">
-        <button class="btn ghost wide" type="submit">Нет</button>
+        <button class="btn btn--ghost btn--lg btn--wide" type="submit">Нет</button>
       </form>
     </div>
     {# В воскресенье варианта «не задавали» нет: делается домашка на
        понедельник. В будни он есть, но со снимком дневника. #}
     {% if policy.nothing_allowed %}
       {% if policy.nothing_needs_photo %}
-        <a class="link center" href="/homework/photo?what=diary" style="display:block; margin-top:8px">
-          Сегодня не задавали
-        </a>
+        <a class="link gate__aside" href="/homework/photo?what=diary">Сегодня не задавали</a>
       {% else %}
-        <form method="post" action="/homework" class="center" style="margin-top:8px">
+        <form method="post" action="/homework" class="gate__aside">
           <input type="hidden" name="action" value="nothing">
           <button class="link" type="submit">Сегодня не задавали</button>
         </form>
       {% endif %}
     {% endif %}
   </div>
+{% elif b.homework_bonus %}
+  <div class="gate gate--done">
+    <svg class="icon icon--sm"><use href="/static/icons.svg#i-check"></use></svg>
+    Домашка отмечена: +{{ b.homework_bonus }} мин. Задания открыты.
+  </div>
 {% endif %}
 
 {# Состояние выдачи. «Принято» и «применено» — разные вещи, и врать здесь
-   нельзя: если написать «готово» раньше времени, доверие к системе кончится. #}
-{% if view.balance.target > view.balance.base %}
-  {% set st = delivery.status if delivery else "none" %}
+   нельзя: если написать «готово» раньше времени, доверие к системе кончится.
+   Три состояния равного веса; «не доехало» — не катастрофа и не прячется. #}
+{% if b.target > b.base %}
   {% if st == "confirmed" %}
-    <div class="note ok"><b>Время на планшете.</b> Можно играть.</div>
+    <div class="delivery delivery--confirmed" id="delivery">
+      <span class="delivery__dot"></span>
+      <div id="delivery-text"><b>Время на планшете.</b> Можно играть.</div>
+    </div>
   {% elif st in ("pending", "unknown") %}
-    <div class="note sync" id="sync">
-      <b>Синхронизируется…</b> Минуты уже твои, планшет вот-вот их увидит.
+    <div class="delivery delivery--pending" id="delivery" data-sync>
+      <span class="delivery__dot"></span>
+      <div id="delivery-text"><b>Синхронизируется.</b> Минуты уже твои, планшет вот-вот их увидит.</div>
     </div>
   {% elif st == "not_applied" %}
-    <div class="note bad">
-      <b>Не доехало до планшета.</b> Минуты записаны и не потеряются — скажи папе.
+    <div class="delivery delivery--stuck" id="delivery">
+      <span class="delivery__dot"></span>
+      <div id="delivery-text"><b>Не доехало до планшета.</b> Минуты записаны и не потеряются — скажи папе.</div>
     </div>
   {% endif %}
 {% endif %}
 
-{% if view.balance.capped %}
+{% if b.capped %}
   <div class="note">
-    <b>Дневной максимум.</b> Больше {{ view.balance.daily_max }} мин за день не выйдет,
+    <b>Дневной максимум.</b> Больше {{ b.daily_max }} мин за день не выйдет,
     задания на потом не пропадут.
   </div>
 {% endif %}
@@ -105,23 +125,29 @@
    привычное вместо нужного. #}
 
 {% macro task_list(items) %}
-  <div class="tasks">
+  <div class="stack-tight">
     {% for item in items %}
       {% if item.state == "earned" %}
-        <div class="task done">
-          <div class="mins">+{{ item.reward_minutes }}<em>получено</em></div>
-          <div class="name">{{ item.title }}<div class="sub">Готово</div></div>
+        <div class="task task--earned">
+          <div class="task__mins">+{{ item.reward_minutes }}<em>получено</em></div>
+          <div class="task__body">
+            <div class="task__name">{{ item.title }}</div>
+            <div class="task__sub">Зачтено</div>
+          </div>
         </div>
       {% else %}
-        <a class="task" href="/task/{{ item.assignment_id }}">
-          <div class="mins">+{{ item.reward_minutes }}<em>минут</em></div>
-          <div class="name">
-            {{ item.title }}
-            <div class="sub">
-              {% if item.cards_total %}
-                {% if item.state == "in_progress" %}Начато, продолжить{% else %}{{ item.cards_total }} карточки{% endif %}
+        <a class="task {% if item.state == 'in_progress' %}task--started{% endif %}"
+           href="/task/{{ item.assignment_id }}">
+          <div class="task__mins">+{{ item.reward_minutes }}<em>минут</em></div>
+          <div class="task__body">
+            <div class="task__name">{{ item.title }}</div>
+            <div class="task__sub">
+              {% if item.state == "in_progress" %}
+                Начато, продолжить
+              {% elif item.cards_total %}
+                {{ item.cards_total }} карточки
               {% else %}
-                {% if item.state == "in_progress" %}Начато, продолжить{% else %}Открыть{% endif %}
+                Открыть
               {% endif %}
             </div>
           </div>
@@ -135,38 +161,50 @@
 {% set vpr = view.by_section("vpr") %}
 
 {% if missions %}
-  <h2>Миссии на сегодня</h2>
-  <p class="muted section-note">
-    Короткие задания по шагам. Подсказки бесплатны и награду не уменьшают.
-  </p>
-  {{ task_list(missions) }}
-  <div class="gap"></div>
+  <div>
+    <h2>Миссии на сегодня</h2>
+    <p class="muted t-secondary">
+      Короткие задания по шагам. Подсказки бесплатны и награду не уменьшают.
+    </p>
+    {{ task_list(missions) }}
+  </div>
 {% endif %}
 
 {% if vpr %}
-  <h2>Разбор заданий ВПР</h2>
-  <p class="muted section-note">
-    Задания из вариантов ВПР. Сначала своя попытка, разбор на видео — если застрял.
-  </p>
-  {{ task_list(vpr) }}
+  <div>
+    <h2>Разбор заданий ВПР</h2>
+    <p class="muted t-secondary">
+      Задания из вариантов ВПР. Сначала своя попытка, разбор на видео — если застрял.
+    </p>
+    {{ task_list(vpr) }}
+  </div>
 {% endif %}
 
 {% if not missions and not vpr %}
-  <div class="note">Заданий на сегодня нет.</div>
+  <div class="empty">
+    <div class="empty__title">Заданий на сегодня нет</div>
+    Завтра появятся новые.
+  </div>
 {% endif %}
 
 {% if view.available_minutes %}
-  <p class="muted center" style="margin-top:18px">
+  <p class="muted center">
     Сегодня можно заработать ещё {{ view.available_minutes }} мин
   </p>
 {% endif %}
+
+</div>
 
 <script>
 // Плашка «синхронизируется» должна гаснуть сама, без перезагрузки страницы:
 // иначе ребёнок будет жать F5 и решать, что система сломана.
 (function () {
-  var note = document.getElementById("sync");
-  if (!note) return;
+  var box = document.querySelector("[data-sync]");
+  if (!box) return;
+  var text = document.getElementById("delivery-text");
+  var target = document.getElementById("target");
+  var meter = document.getElementById("meter");
+  var dailyMax = {{ b.daily_max or 0 }};
   var tries = 0;
   var timer = setInterval(function () {
     tries += 1;
@@ -174,17 +212,24 @@
     fetch("/status", { credentials: "same-origin" })
       .then(function (r) { return r.json(); })
       .then(function (s) {
-        document.getElementById("target").innerHTML = s.target + "<small> мин</small>";
+        if (target.firstChild.textContent !== String(s.target)) {
+          target.innerHTML = s.target + "<small>мин</small>";
+          target.classList.remove("board__value--tick");
+          void target.offsetWidth;            // перезапуск анимации
+          target.classList.add("board__value--tick");
+          if (meter && dailyMax) meter.style.width = Math.round(100 * s.target / dailyMax) + "%";
+        }
         document.getElementById("earned").textContent = s.earned;
         document.getElementById("hw").textContent = s.homework_bonus ? "+" + s.homework_bonus : "—";
         if (s.delivery === "confirmed") {
           clearInterval(timer);
-          note.className = "note ok";
-          note.innerHTML = "<b>Время на планшете.</b> Можно играть.";
+          box.className = "delivery delivery--confirmed";
+          text.innerHTML = "<b>Время на планшете.</b> Можно играть.";
+          box.closest(".stack").querySelector(".board").classList.remove("board--unconfirmed");
         } else if (s.delivery === "not_applied") {
           clearInterval(timer);
-          note.className = "note bad";
-          note.innerHTML = "<b>Не доехало до планшета.</b> Минуты записаны и не потеряются — скажи папе.";
+          box.className = "delivery delivery--stuck";
+          text.innerHTML = "<b>Не доехало до планшета.</b> Минуты записаны и не потеряются — скажи папе.";
         }
       })
       .catch(function () { /* сеть моргнула — просто пробуем снова */ });

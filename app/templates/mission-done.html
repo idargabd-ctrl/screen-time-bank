@@ -4,13 +4,19 @@
 {% block body %}
 <h1>Миссия пройдена</h1>
 
-<div class="board">
-  <div class="label">
+<div class="stack">
+
+<div class="board {% if not result.balance.gate_open %}board--locked{% endif %}">
+  <div class="board__label">
     {% if result.granted %}Начислено за миссию{% else %}За эту миссию уже начислено{% endif %}
   </div>
-  <div class="big">+{{ item.reward_minutes }}<small> мин</small></div>
-  <div class="stats">
-    <div class="stat"><b>{{ result.balance.earned }}</b><span>всего за сегодня</span></div>
+  <div class="board__value {% if not result.balance.gate_open %}board__value--locked{% endif %}">
+    +{{ item.reward_minutes }}<small>мин</small>
+  </div>
+  <div class="board__stats board__stats--2">
+    <div class="stat {% if not result.balance.gate_open %}stat--locked{% endif %}">
+      <b>{{ result.balance.earned }}</b><span>всего за сегодня</span>
+    </div>
     <div class="stat"><b>{{ result.balance.target }}</b><span>минут на планшете</span></div>
   </div>
 </div>
@@ -19,11 +25,11 @@
    «молодец». Ребёнок должен понять, за что именно похвалили. #}
 {% set feedback = item.feedback if item.feedback is defined else "" %}
 {% if feedback %}
-  <div class="note ok">{{ feedback }}</div>
+  <div class="note note--ok">{{ feedback }}</div>
 {% endif %}
 
 {% if not result.balance.gate_open %}
-  <div class="note locked">
+  <div class="note note--locked">
     <b>Минуты записаны, но заперты.</b>
     Отметь домашку на главной — и они уйдут на планшет.
   </div>
@@ -36,18 +42,17 @@
   </div>
 {% endif %}
 
-
 {# Добровольная оценка — одна, в конце, как просит методика. Можно не отвечать:
    кнопка «К заданиям» рядом и ничего не теряется. #}
-<div class="note rate">
-  <b>Как тебе задание?</b> <span class="muted">Можно не отвечать.</span>
-  <form method="post" action="/rate/{{ attempt_id }}" class="row" style="margin-top:10px">
-    <button class="btn ghost" type="submit" name="rating" value="boring">Скучно</button>
-    <button class="btn ghost" type="submit" name="rating" value="ok">Нормально</button>
-    <button class="btn ghost" type="submit" name="rating" value="fun">Интересно</button>
+<div class="rate">
+  <div class="rate__head"><b>Как тебе задание?</b> <span class="muted t-secondary">Можно не отвечать.</span></div>
+  <form method="post" action="/rate/{{ attempt_id }}" class="rate__opts">
+    <button class="btn btn--ghost" type="submit" name="rating" value="boring">Скучно</button>
+    <button class="btn btn--ghost" type="submit" name="rating" value="ok">Нормально</button>
+    <button class="btn btn--ghost" type="submit" name="rating" value="fun">Интересно</button>
   </form>
 </div>
 
-<div class="gap"></div>
-<a class="btn wide" href="/">К заданиям</a>
+<a class="btn btn--wide btn--lg" href="/">К заданиям</a>
+</div>
 {% endblock %}
