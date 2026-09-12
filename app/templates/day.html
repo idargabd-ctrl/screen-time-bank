@@ -5,8 +5,10 @@
 {% set b = view.balance %}
 {% set st = delivery.status if delivery else "none" %}
 
+{# Время — серверное на момент загрузки, дальше тикает по часам планшета:
+   сын видит, сколько сейчас, не выходя с сайта. #}
 <div class="screen-head">
-  <h1>{{ title_date }}</h1>
+  <h1>{{ title_date }} <span class="screen-head__clock" id="clock">{{ clock }}</span></h1>
   <span class="screen-head__who">{{ child.name if child else "" }}</span>
 </div>
 
@@ -221,6 +223,16 @@
 </div>
 
 <script>
+// Часы в заголовке: раз в полминуты подставляем время планшета.
+(function () {
+  var el = document.getElementById("clock");
+  if (!el) return;
+  function tick() {
+    var d = new Date();
+    el.textContent = (d.getHours() < 10 ? "0" : "") + d.getHours() + ":" + (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+  }
+  setInterval(tick, 30000);
+})();
 // Плашка «синхронизируется» должна гаснуть сама, без перезагрузки страницы:
 // иначе ребёнок будет жать F5 и решать, что система сломана.
 (function () {

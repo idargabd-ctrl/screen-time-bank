@@ -463,6 +463,7 @@ a:hover { color: var(--text-primary); }
 /* ---- Заголовок экрана ---------------------------------------------------- */
 .screen-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4); }
 .screen-head__who { color: var(--text-secondary); font-size: var(--type-secondary-size); }
+.screen-head__clock { color: var(--minutes); font-variant-numeric: var(--numeric); margin-left: var(--space-2); }
 
 /* ---- Индикатор шагов ------------------------------------------------------ */
 .steps { display: flex; align-items: center; gap: var(--space-1); margin-bottom: var(--space-4); flex-wrap: wrap; }

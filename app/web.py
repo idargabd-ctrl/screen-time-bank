@@ -151,6 +151,7 @@ def index(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
 
     return render(request, "day.html", view=view, delivery=delivery, nudge=nudge, morning=morning,
                   title_date=service.human_date(day), policy=service.homework_policy(day),
+                  clock=bank.now(cfg.timezone).strftime("%H:%M"),
                   homework_state=bank.homework_state(conn, child_id, day),
                   child=conn.execute("SELECT name FROM child WHERE id = ?", (child_id,)).fetchone())
 
