@@ -7,24 +7,63 @@
 Запуск: py -3 variants.py  ->  пишет content/vpr4-2025-variants.json и
 печатает словарь EXPECTED для tests/test_content.py.
 """
-import json, sys
+import json
+import re, sys
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parents[2] / "content" / "vpr4-2025-variants.json"
-REWARD = 20          # полный вариант — «сложное по просьбе», дороже обычного разбора
+REWARD = 25          # половина варианта — «сложное по просьбе»; решение владельца 12.09
 PASS = 0.8
 
 TASKS = []
 
 
+def task_number(prompt):
+    """Номер задания из начала вопроса («Задание 5, пункт 2. …» → 5), иначе None."""
+    m = re.match(r"Задание (\d+)", prompt)
+    return int(m.group(1)) if m else None
+
+
+def split_point(questions):
+    """
+    Индекс первого вопроса второй половины.
+
+    Режем только на границе задания (пункты и «а теперь минуты» остаются со
+    своим заданием) и выбираем границу, ближайшую к середине по числу
+    вопросов: половины получаются равными по усилиям, а не по номерам.
+    """
+    starts = [i for i, (prompt, _, _) in enumerate(questions)
+              if i > 0 and task_number(prompt) is not None
+              and task_number(prompt) != task_number(questions[i - 1][0])
+              and "пункт" not in prompt.split(".")[0]]
+    if not starts:
+        raise ValueError("не нашёл границ заданий — нечем делить")
+    return min(starts, key=lambda i: abs(i - len(questions) / 2))
+
+
 def variant(slug, title, video, video_file, questions, reward=REWARD):
-    TASKS.append({
-        "slug": slug, "kind": "quiz", "version": 2, "title": title,
-        "video": video, "reward_minutes": reward,
-        "payload": {"pass_ratio": PASS,
-                    "questions": [{"prompt": p, "answer": a, "hint": h} for p, a, h in questions]},
-        "video_file": video_file,
-    })
+    """
+    Полный вариант разрезается на две задачи примерно поровну.
+
+    Целый вариант — 14 номеров за одну награду — выходил дешевле обычного
+    разбора в пересчёте на номер; половина по усилиям сравнима с миссией.
+    Ролик у обеих половин один и тот же.
+    """
+    cut = split_point(questions)
+    first_b = task_number(questions[cut][0])
+    last = task_number(questions[-1][0]) or ""
+    parts = (
+        ("a", f"{title} · часть 1 (задания 1–{first_b - 1})", questions[:cut]),
+        ("b", f"{title} · часть 2 (задания {first_b}–{last})", questions[cut:]),
+    )
+    for suffix, part_title, part in parts:
+        TASKS.append({
+            "slug": f"{slug}-{suffix}", "kind": "quiz", "version": 2, "title": part_title,
+            "video": video, "reward_minutes": reward,
+            "payload": {"pass_ratio": PASS,
+                        "questions": [{"prompt": p, "answer": a, "hint": h} for p, a, h in part]},
+            "video_file": video_file,
+        })
 
 
 V = "vpr-po-matematike-4-klass-{n}-variant-2025-razbor-zadaniy-480p.mp4"

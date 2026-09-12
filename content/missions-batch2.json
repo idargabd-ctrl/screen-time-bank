@@ -621,7 +621,7 @@
    "kind": "mission",
    "version": 1,
    "title": "Место в команде",
-   "reward_minutes": 20,
+   "reward_minutes": 25,
    "section": "extra",
    "payload": {
     "skill": "Понимание мотивов персонажа и подтверждение вывода текстом",
@@ -665,7 +665,7 @@
    "kind": "mission",
    "version": 1,
    "title": "Последняя батарейка",
-   "reward_minutes": 20,
+   "reward_minutes": 25,
    "section": "extra",
    "payload": {
     "skill": "Понимание мотивов персонажа и подтверждение вывода текстом",

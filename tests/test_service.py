@@ -378,7 +378,7 @@ def test_mission_state_exposes_previous_cards_without_answers(conn):
 def _add_extra(conn, task_id, title):
     conn.execute(
         "INSERT INTO task (id, kind, version, title, payload, reward_minutes, section, active) "
-        "VALUES (?, 'math', 1, ?, ?, 20, 'extra', 1)",
+        "VALUES (?, 'math', 1, ?, ?, 25, 'extra', 1)",
         (task_id, title, json.dumps({"count": 3, "ops": ["+"], "max": 10})),
     )
 
@@ -404,7 +404,7 @@ def test_extra_is_given_only_after_everything_open_is_earned_and_at_most_three(c
     first = service.request_extra(conn, child_id=1, day=DAY)
     view = service.day_view(conn, 1, DAY)
     extra = view.by_section(service.EXTRA)
-    assert [i.assignment_id for i in extra] == [first] and extra[0].reward_minutes == 20
+    assert [i.assignment_id for i in extra] == [first] and extra[0].reward_minutes == 25
     # пока сложное не зачтено — второе не дают
     with pytest.raises(service.ServiceError):
         service.request_extra(conn, child_id=1, day=DAY)
@@ -420,7 +420,7 @@ def test_extra_is_given_only_after_everything_open_is_earned_and_at_most_three(c
     ids = {i.task_id for i in service.day_view(conn, 1, DAY).by_section(service.EXTRA)}
     assert len(ids) == 3
     bal = bank.balance(conn, 1, DAY)
-    assert bal.earned == 30 + 20 + 60 and bal.target == 15 + 110
+    assert bal.earned == 30 + 20 + 75 and bal.target == 15 + 125
 
 
 def test_extra_picks_the_least_recently_seen_task(conn):

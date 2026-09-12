@@ -490,7 +490,7 @@
       "kind": "mission",
       "version": 1,
       "title": "Откуда взялся такой вывод",
-      "reward_minutes": 20,
+      "reward_minutes": 25,
       "section": "extra",
       "payload": {
         "skill": "Понимание мотивов персонажа и подтверждение вывода текстом",

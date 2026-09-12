@@ -158,6 +158,51 @@ EXPECTED = {
 }
 
 
+def _halves(full_slug: str) -> tuple[dict, dict] | None:
+    """Две половины полного варианта из каталога, или None, если их нет."""
+    a = next((t for _, _, t in ALL if t["slug"] == full_slug + "-a"), None)
+    b = next((t for _, _, t in ALL if t["slug"] == full_slug + "-b"), None)
+    return (a, b) if a and b else None
+
+
+def _split_keys(keys: dict) -> dict:
+    """
+    Ключи полных вариантов 2025 → ключи их половин.
+
+    Варианты разрезаны генератором на «-a» и «-b» (tools/vpr-frames/variants.py);
+    ожидаемые ответы здесь по-прежнему записаны на целый вариант — так их
+    сверяли с роликом — и раскладываются по половинам по длине первой.
+    """
+    out = {}
+    for slug, value in keys.items():
+        halves = _halves(slug) if slug.startswith("vpr4-2025-") else None
+        if halves is None:
+            out[slug] = value
+            continue
+        cut = len(halves[0]["payload"]["questions"])
+        if isinstance(value, list):
+            out[slug + "-a"], out[slug + "-b"] = value[:cut], value[cut:]
+        else:   # VIDEO_KEY: {индекс: ответ}
+            out[slug + "-a"] = {i: v for i, v in value.items() if i < cut}
+            out[slug + "-b"] = {i - cut: v for i, v in value.items() if i >= cut}
+    return out
+
+
+EXPECTED = _split_keys(EXPECTED)
+
+
+def test_full_variants_are_cut_at_a_task_boundary_near_the_middle():
+    for _, _, t in ALL:
+        if not (t["slug"].startswith("vpr4-2025-") and t["slug"].endswith("-a")):
+            continue
+        halves = _halves(t["slug"][:-2])
+        assert halves is not None, t["slug"]
+        qa, qb = (h["payload"]["questions"] for h in halves)
+        assert abs(len(qa) - len(qb)) <= 2, f"{t['slug']}: половины {len(qa)} и {len(qb)}"
+        assert qb[0]["prompt"].startswith("Задание "), "вторая половина начинается с нового задания"
+        assert "пункт" not in qb[0]["prompt"].split(".")[0], "пункт не отрывается от своего задания"
+
+
 @pytest.mark.parametrize("task", [t for _, _, t in ALL], ids=IDS)
 def test_answers_match_what_they_should_be(task):
     slug = task["slug"]
@@ -437,6 +482,7 @@ VIDEO_KEY = {
     "vpr4-2025-var-11": {0: "8", 2: "3", 4: "18", 5: "2010", 6: "Екатеринбург", 7: "33964"},
     "vpr4-2025-var-12": {0: "91", 2: "5", 3: "9", 4: "16", 5: "1990", 6: "3", 7: "50030"},
 }
+VIDEO_KEY = _split_keys(VIDEO_KEY)
 
 
 @pytest.mark.parametrize("slug", sorted(VIDEO_KEY), ids=sorted(VIDEO_KEY))

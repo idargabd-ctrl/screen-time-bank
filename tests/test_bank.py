@@ -395,10 +395,10 @@ def test_tasks_stack_on_top_of_homework_up_to_the_cap(paid):
     assert result.balance.capped is False
 
     paid.execute("INSERT INTO task (id, kind, version, title, reward_minutes) "
-                 "VALUES (2,'words',1,'Слова',100)")
+                 "VALUES (2,'words',1,'Слова',150)")
     result = bank.grant(paid, child_id=1, task_id=2, task_version=1, day=DAY,
-                        minutes=100, attempt_id=None, at=AT)
-    assert result.balance.target == 180, "дальше максимума не растёт"
+                        minutes=150, attempt_id=None, at=AT)
+    assert result.balance.target == 195, "дальше максимума не растёт"
     assert result.balance.capped is True
 
 
@@ -481,7 +481,7 @@ def test_parent_grant_goes_above_the_daily_maximum_and_is_validated(paid):
     bank.parent_grant(paid, child_id=1, day=DAY, minutes=60, reason="", at=AT)
     bal = bank.balance(paid, 1, DAY)
     assert bal.granted == 120 and bal.target == 15 + 120 and not bal.capped
-    for bad in (0, 3, 7, 185, -5):
+    for bad in (0, 3, 7, 200, -5):
         with pytest.raises(ValueError):
             bank.parent_grant(paid, child_id=1, day=DAY, minutes=bad, reason="", at=AT)
     assert bank.balance(paid, 1, DAY).granted == 120, "неверные суммы не записываются"
