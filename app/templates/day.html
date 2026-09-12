@@ -12,6 +12,17 @@
 
 <div class="stack">
 
+{# Итог утра — сразу после чек-листа, один раз. Про базовые 15 говорится
+   правда: они на планшете каждый день, а не «добавлены за зубы» — иначе
+   первый же пропущенный чек-лист с теми же 15 обнулит доверие к надписям. #}
+{% if morning %}
+  <div class="gate gate--done">
+    <div class="gate__title">Молодец, утро собрано.</div>
+    {{ b.base }} минут уже на планшете — они твои каждый день. Дальше — задания:
+    сегодня можно заработать ещё {{ view.available_minutes }} мин.
+  </div>
+{% endif %}
+
 {# Табло. Полоса слева несёт состояние: минуты, заперто, потолок,
    ещё не на планшете. Число одно — минуты, второй валюты нет. #}
 <div class="board
@@ -19,7 +30,7 @@
   {%- elif not b.gate_open and b.earned %} board--locked
   {%- elif b.target > b.base and st in ('pending', 'unknown') %} board--unconfirmed{% endif %}">
   <div class="board__label">Минут на сегодня</div>
-  <div class="board__value" id="target">{{ b.target }}<small>мин</small></div>
+  <div class="board__value {% if morning %}board__value--tick{% endif %}" id="target">{{ b.target }}<small>мин</small></div>
   <div class="board__meter {% if b.capped %}board__meter--capped{% endif %}">
     <i id="meter" style="width: {{ (100 * b.target / b.daily_max) | round | int if b.daily_max else 0 }}%"></i>
   </div>

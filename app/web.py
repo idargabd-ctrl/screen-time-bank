@@ -142,13 +142,14 @@ def index(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
     # Ответил «нет» на вопрос про домашку: ничего не записываем, только
     # напоминаем, что она стоит минут. Флаг живёт в адресе, а не в базе.
     nudge = request.query_params.get("dz") == "net"
+    morning = request.query_params.get("utro") == "1"
     delivery = conn.execute(
         "SELECT status, target_minutes, applied_minutes FROM delivery "
         " WHERE child_id = ? AND day = ?",
         (child_id, day),
     ).fetchone()
 
-    return render(request, "day.html", view=view, delivery=delivery, nudge=nudge,
+    return render(request, "day.html", view=view, delivery=delivery, nudge=nudge, morning=morning,
                   title_date=service.human_date(day), policy=service.homework_policy(day),
                   homework_state=bank.homework_state(conn, child_id, day),
                   child=conn.execute("SELECT name FROM child WHERE id = ?", (child_id,)).fetchone())
@@ -168,8 +169,9 @@ async def checklist_submit(request: Request, conn: sqlite3.Connection = Depends(
     child_id = current_child(request)
     form = await request.form()
     checked = [str(v) for v in form.getlist("item")]
-    service.complete_checklist(conn, child_id=child_id, day=today(), checked=checked, at=now_iso())
-    return RedirectResponse("/", status_code=303)
+    items = service.complete_checklist(conn, child_id=child_id, day=today(), checked=checked, at=now_iso())
+    # Всё отмечено — главная встречает итогом утра. Флаг в адресе, не в базе.
+    return RedirectResponse("/?utro=1" if items and all(items.values()) else "/", status_code=303)
 
 
 def source_of(request: Request) -> str:
