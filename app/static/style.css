@@ -458,6 +458,8 @@ a:hover { color: var(--text-primary); }
 .panel--raised { background: var(--surface-raised); }
 .panel--marked { position: relative; }
 .panel--marked::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--stroke-mark); background: var(--accent); }
+/* Закреплённое условие: стоит сверху, пока вопросы ниже меняются. */
+.pin { position: sticky; top: 0; z-index: 2; }
 .divider { height: var(--stroke-hair); background: var(--border-quiet); border: 0; margin: var(--space-4) 0; }
 
 /* ---- Заголовок экрана ---------------------------------------------------- */

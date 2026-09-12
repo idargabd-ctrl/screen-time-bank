@@ -1,0 +1,46 @@
+{# Вопросы по одному. Форма та же, что и без JS: все .q лежат в ней, проверка
+   остаётся на сервере и одна на всю карточку. Скрипт только показывает по
+   одному вопросу за раз — сын не скачет между полями, а отвечает по порядку.
+   Без JS видны все вопросы сразу, как раньше. #}
+<script>
+(function () {
+  var form = document.querySelector("form[data-wizard]");
+  if (!form) return;
+  var qs = [].slice.call(form.querySelectorAll(".q"));
+  if (qs.length < 2) return;
+  var submit = form.querySelector("button[type=submit]");
+
+  var pos = document.createElement("div");
+  pos.className = "muted t-caption wizard__pos";
+  qs[0].parentNode.insertBefore(pos, qs[0]);
+
+  var nav = document.createElement("div");
+  nav.className = "row";
+  var back = document.createElement("button");
+  back.type = "button"; back.className = "btn btn--ghost btn--lg"; back.textContent = "Назад";
+  var next = document.createElement("button");
+  next.type = "button"; next.className = "btn btn--lg"; next.textContent = "Дальше";
+  nav.appendChild(back); nav.appendChild(next);
+  submit.parentNode.insertBefore(nav, submit);
+
+  var i = 0;
+  function show() {
+    qs.forEach(function (q, k) { q.hidden = k !== i; });
+    pos.textContent = "Вопрос " + (i + 1) + " из " + qs.length;
+    back.hidden = i === 0;
+    next.hidden = i === qs.length - 1;
+    submit.hidden = i !== qs.length - 1;
+    var input = qs[i].querySelector("input, textarea");
+    if (input) input.focus({ preventScroll: true });
+  }
+  back.addEventListener("click", function () { if (i > 0) { i -= 1; show(); } });
+  next.addEventListener("click", function () { if (i < qs.length - 1) { i += 1; show(); } });
+  // Enter в поле — «Дальше», а не отправка всей формы с пустыми хвостами.
+  form.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && e.target.tagName === "INPUT" && i < qs.length - 1) {
+      e.preventDefault(); i += 1; show();
+    }
+  });
+  show();
+})();
+</script>

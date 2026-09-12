@@ -36,7 +36,7 @@
   </details>
 {% endif %}
 
-<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off" class="stack">
+<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off" class="stack" data-wizard>
   <input type="hidden" name="attempt_id" value="{{ attempt_id }}">
 
   {% for q in questions %}
@@ -53,6 +53,7 @@
 
 <a class="btn btn--ghost btn--wide" href="/">Назад</a>
 </div>
+{% include "_wizard.html" %}
 
 {% if item.video_file %}
 <script>

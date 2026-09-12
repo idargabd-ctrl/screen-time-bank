@@ -40,9 +40,15 @@
   </details>
 {% endif %}
 
-{# Условие — панель с акцентной полосой. Декор внутрь условия не заходит. #}
-{% if state.card.intro %}
-  <div class="panel panel--marked">{{ state.card.intro }}</div>
+{# Условие — закреплено сверху и не уезжает при прокрутке: вопросы ниже
+   меняются, условие стоит. Если у карточки своего условия нет (она про
+   текст предыдущей), наверху остаётся условие последней пройденной. #}
+{% set pinned = state.card.intro or (state.previous[-1].intro if state.previous else "") %}
+{% if pinned %}
+  <div class="panel panel--marked pin">
+    <div class="muted t-caption">Условие</div>
+    {{ pinned }}
+  </div>
 {% endif %}
 
 {# Разбор предыдущей попытки этой же карточки. Правильных ответов здесь нет —
@@ -63,7 +69,7 @@
   {% endfor %}
 {% endif %}
 
-<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off" class="stack">
+<form method="post" action="/task/{{ item.assignment_id }}" autocomplete="off" class="stack" data-wizard>
   <input type="hidden" name="attempt_id" value="{{ state.attempt_id }}">
 
   {% for q in state.card.questions %}
@@ -105,4 +111,5 @@
 
 <a class="btn btn--ghost btn--wide" href="/">Выйти, шаги сохранятся</a>
 </div>
+{% include "_wizard.html" %}
 {% endblock %}
