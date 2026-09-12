@@ -22,9 +22,9 @@ from app import delivery  # noqa: E402
 BASE = 15
 
 
-def d(actual, target, applied=None, base=BASE, manual=0):
+def d(actual, target, applied=None, base=BASE, manual=0, daily_max=24 * 60):
     return delivery.decide(actual=actual, target=target, applied=applied, base=base,
-                           manual=manual)
+                           manual=manual, daily_max=daily_max)
 
 
 # --------------------------------------------------------------------------
@@ -54,37 +54,48 @@ def test_unreadable_state_is_not_a_reason_to_write():
 # --------------------------------------------------------------------------
 
 
-def test_manual_grant_before_our_first_write_is_kept_as_an_offset():
+def test_manual_grant_before_our_first_write_is_an_advance():
     """
     Ровно тот случай, что случился в жизни: цель 35, на планшете 120.
 
     Записать 35 значило бы отнять время, которое папа выдал руками. Разница
-    с базой (105) становится надбавкой дня, а заработанные 20 идут поверх:
-    на планшете должно стать 140.
+    с базой (105) запоминается, а 120 признаётся авансом: цель 35 внутри него,
+    писать нечего.
     """
     decision = d(actual=120, target=35)
-    assert decision.action == delivery.WRITE
+    assert decision.action == delivery.CONFIRM
     assert decision.manual_changed
     assert decision.manual == 105
-    assert decision.wanted == 140
+    assert decision.wanted == 120
     assert "120" in decision.reason
 
 
-def test_manual_change_after_our_write_moves_with_the_next_reward():
-    """Мы поставили 35, папа сделал 90, сын заработал ещё 10: пишем 100."""
+def test_earnings_catch_up_with_the_advance_instead_of_stacking():
+    """Папа поставил 50 с утра, сын отметил домашку (цель 60): на планшете 60, не 95."""
+    first = d(actual=50, target=15)            # утро: 15 → 50 руками
+    assert first.action == delivery.CONFIRM and first.manual == 35
+    later = d(actual=50, target=60, applied=50, manual=35)
+    assert later.action == delivery.WRITE
+    assert later.wanted == 60
+    # цель ниже аванса — аванс остаётся, писать нечего
+    assert d(actual=50, target=40, applied=50, manual=35).action == delivery.CONFIRM
+
+
+def test_manual_change_after_our_write_is_an_advance_too():
+    """Мы поставили 35, папа сделал 90, сын заработал ещё 10 (цель 45): остаётся 90."""
     decision = d(actual=90, target=45, applied=35)
-    assert decision.action == delivery.WRITE
-    assert decision.manual == 55
-    assert decision.wanted == 100
+    assert decision.action == delivery.CONFIRM
+    assert decision.manual == 75, "аванс считается от базы: на устройстве 90 = 15 + 75"
+    assert decision.wanted == 90
     assert "после нашей записи" in decision.reason
 
 
-def test_offset_is_carried_into_later_decisions():
-    """Надбавка запомнена: следующая награда прибавляется к ней, а не к цели."""
-    decision = d(actual=100, target=55, applied=100, manual=55)
+def test_daily_maximum_caps_the_advance_as_well():
+    """Руками поставили 200 при максимуме 120 — сервер опускает до 120."""
+    decision = d(actual=200, target=15, daily_max=120)
     assert decision.action == delivery.WRITE
-    assert decision.wanted == 110
-    assert not decision.manual_changed
+    assert decision.wanted == 120
+    assert "понижаем" in decision.reason
 
 
 def test_manual_lowering_is_also_respected():

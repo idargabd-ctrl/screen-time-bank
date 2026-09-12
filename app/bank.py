@@ -113,7 +113,7 @@ def homework_minutes(conn: sqlite3.Connection) -> int:
 
 
 def quota_for(base: int, earned: int, daily_max: int, gate_open: bool = True,
-              homework_bonus: int = 0) -> int:
+              homework_bonus: int = 0, granted: int = 0) -> int:
     """
     Целевая квота на сегодня.
 
@@ -126,9 +126,12 @@ def quota_for(base: int, earned: int, daily_max: int, gate_open: bool = True,
     раньше сайта, порядок его дело. Сделанная домашка сверх того добавляет
     свои минуты (homework_bonus) — они считаются из отметки, а не из журнала
     наград, и исчезают вместе с отозванной отметкой.
+
+    Минуты от родителя (granted) ворот не ждут: это его решение, и оно
+    выполняется сразу. Максимум ограничивает и их.
     """
     released = earned if gate_open else 0
-    return max(0, min(daily_max, base + homework_bonus + released))
+    return max(0, min(daily_max, base + homework_bonus + released + granted))
 
 
 def homework_state(conn: sqlite3.Connection, child_id: int, day: str) -> str | None:
@@ -144,6 +147,15 @@ def homework_state(conn: sqlite3.Connection, child_id: int, day: str) -> str | N
 def homework_marked(conn: sqlite3.Connection, child_id: int, day: str) -> bool:
     """Есть ли за этот день непогашенная отметка о домашней работе."""
     return homework_state(conn, child_id, day) is not None
+
+
+def granted_today(conn: sqlite3.Connection, child_id: int, day: str) -> int:
+    """Минуты, добавленные родителем через /parent за день."""
+    row = conn.execute(
+        "SELECT COALESCE(SUM(minutes), 0) AS m FROM parent_grant WHERE child_id = ? AND day = ?",
+        (child_id, day),
+    ).fetchone()
+    return int(row["m"])
 
 
 def earned_today(conn: sqlite3.Connection, child_id: int, day: str) -> int:
@@ -166,6 +178,7 @@ class Balance:
     homework_marked: bool
     homework_bonus: int = 0    # минуты за сделанную домашку, из отметки
     homework_minutes: int = 0  # сколько домашка стоит по настройке (для экрана)
+    granted: int = 0           # минуты от родителя через /parent
 
     @property
     def gate_open(self) -> bool:
@@ -185,7 +198,7 @@ class Balance:
     def capped(self) -> bool:
         """Упёрлись ли в дневной максимум — сайту это надо показать честно."""
         released = self.earned if self.gate_open else 0
-        return self.base + self.homework_bonus + released > self.daily_max
+        return self.base + self.homework_bonus + released + self.granted > self.daily_max
 
 
 def balance(conn: sqlite3.Connection, child_id: int, day: str) -> Balance:
@@ -198,10 +211,11 @@ def balance(conn: sqlite3.Connection, child_id: int, day: str) -> Balance:
     gate = (not required) or marked
     worth = homework_minutes(conn)
     bonus = worth if state == "done" else 0
+    granted = granted_today(conn, child_id, day)
     return Balance(day=day, base=base, earned=earned, daily_max=cap,
-                   target=quota_for(base, earned, cap, gate, bonus),
+                   target=quota_for(base, earned, cap, gate, bonus, granted),
                    homework_required=required, homework_marked=marked,
-                   homework_bonus=bonus, homework_minutes=worth)
+                   homework_bonus=bonus, homework_minutes=worth, granted=granted)
 
 
 # --------------------------------------------------------------------------
@@ -301,6 +315,27 @@ def mark_homework(conn: sqlite3.Connection, *, child_id: int, day: str, at: str,
             "  photo_file = excluded.photo_file, "
             "  revoked_at = NULL, revoked_reason = NULL",
             (child_id, day, at, marked_as, marked_by, photo_file),
+        )
+        bal = balance(conn, child_id, day)
+        _set_target(conn, child_id=child_id, day=day, target=bal.target, at=at)
+    return bal
+
+
+def parent_grant(conn: sqlite3.Connection, *, child_id: int, day: str, minutes: int,
+                 reason: str, at: str) -> Balance:
+    """
+    Минуты от родителя. Не награда и не аванс: отдельная строка журнала,
+    видна в сводке как «от папы». Кратно 5, от 5 до дневного максимума —
+    случайное «500» не пройдёт.
+    """
+    cap = daily_max_minutes(conn)
+    if minutes < 5 or minutes > cap or minutes % 5:
+        raise ValueError(f"Минуты — от 5 до {cap}, кратно 5")
+    reason = " ".join(reason.split())[:200]
+    with conn:
+        conn.execute(
+            "INSERT INTO parent_grant (child_id, day, minutes, reason, created_at) VALUES (?, ?, ?, ?, ?)",
+            (child_id, day, minutes, reason, at),
         )
         bal = balance(conn, child_id, day)
         _set_target(conn, child_id=child_id, day=day, target=bal.target, at=at)

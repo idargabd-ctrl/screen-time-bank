@@ -452,3 +452,37 @@ def test_photo_column_is_added_to_an_old_base(tmp_path):
     c = db.open_db(path)
     assert "photo_file" in {r["name"] for r in c.execute("PRAGMA table_info(homework)")}
     c.close()
+
+
+# --------------------------------------------------------------------------
+# Минуты от родителя
+# --------------------------------------------------------------------------
+
+
+def test_parent_grant_enters_the_quota_without_waiting_for_homework(paid):
+    """Решение родителя выполняется сразу: ворота домашки на него не действуют."""
+    bank.grant(paid, child_id=1, task_id=1, task_version=1, day=DAY, minutes=30, attempt_id=None, at=AT)
+    before = bank.balance(paid, 1, DAY)
+    assert before.target == 15 and before.locked == 30
+
+    bal = bank.parent_grant(paid, child_id=1, day=DAY, minutes=20, reason="камера не открылась", at=AT)
+    assert bal.granted == 20
+    assert bal.target == 35, "база 15 + 20 от папы; заработанные 30 ждут домашку"
+    row = paid.execute("SELECT target_minutes, status FROM delivery WHERE day = ?", (DAY,)).fetchone()
+    assert (row["target_minutes"], row["status"]) == (35, "pending")
+
+    bank.mark_homework(paid, child_id=1, day=DAY, at=AT)
+    assert bank.balance(paid, 1, DAY).target == 15 + 45 + 30 + 20
+
+
+def test_parent_grant_is_capped_by_the_daily_maximum_and_validated(paid):
+    bank.parent_grant(paid, child_id=1, day=DAY, minutes=60, reason="", at=AT)
+    bank.parent_grant(paid, child_id=1, day=DAY, minutes=60, reason="", at=AT)
+    bal = bank.balance(paid, 1, DAY)
+    assert bal.granted == 120 and bal.target == 120 and bal.capped
+    for bad in (0, 3, 7, 125, -5):
+        with pytest.raises(ValueError):
+            bank.parent_grant(paid, child_id=1, day=DAY, minutes=bad, reason="", at=AT)
+    assert bank.balance(paid, 1, DAY).granted == 120, "неверные суммы не записываются"
+    # соседний день не затронут
+    assert bank.balance(paid, 1, NEXT_DAY).granted == 0

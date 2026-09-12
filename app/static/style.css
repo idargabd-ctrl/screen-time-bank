@@ -333,6 +333,9 @@ a:hover { color: var(--text-primary); }
 .stack-tight { display: grid; gap: var(--gap-tight); }
 .row { display: flex; gap: var(--target-gap); flex-wrap: wrap; }
 .row > * { flex: 1 1 140px; }
+/* Отбивки сверху по шкале — вместо инлайновых стилей в шаблонах. */
+.mt-2 { margin-top: var(--space-2) !important; }
+.mt-3 { margin-top: var(--space-3) !important; }
 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
   outline: var(--focus-width) solid var(--focus);
   outline-offset: var(--focus-offset);

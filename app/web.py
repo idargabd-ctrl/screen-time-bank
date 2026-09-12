@@ -345,9 +345,35 @@ def parent_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
         d["cards"] = tasks.mission_cards(payload) if d["kind"] == tasks.MISSION else []
         d["questions"] = [] if d["kind"] == tasks.MISSION else tasks.generate(d["kind"], payload, seed=1)
     checklists = service.checklist_history(conn, child["id"], since=since) if child else []
+    # Сегодня одним взглядом: цель сервера, что стоит на планшете, аванс.
+    balance = bank.balance(conn, child["id"], today()) if child else None
+    delivery_row = conn.execute("SELECT * FROM delivery WHERE child_id = ? AND day = ?",
+                                (child["id"], today())).fetchone() if child else None
+    grants = conn.execute("SELECT day, minutes, reason, created_at FROM parent_grant "
+                          " WHERE child_id = ? AND day >= ? ORDER BY id DESC",
+                          (child["id"], since)).fetchall() if child else []
     return render(request, "parent.html", rows=rows, today=today(), drafts=drafts,
                   pilot_days=pilot_days, pilot_items=pilot_items[:30], checklists=checklists,
-                  manual_total=sum(d.manual for d in pilot_days))
+                  manual_total=sum(d.manual for d in pilot_days), balance=balance,
+                  delivery_row=delivery_row, grants=grants, child_id=child["id"] if child else 0)
+
+
+@app.post("/parent/grant")
+def parent_grant(request: Request, child_id: int = Form(...), minutes: int = Form(...),
+                 reason: str = Form(""), conn: sqlite3.Connection = Depends(get_conn)):
+    """
+    Минуты от родителя. Единственный законный способ добавить время мимо
+    заданий: ложится в журнал, входит в цель, видно в сводке. Правка руками в
+    Family Link — аванс, а не подарок (см. delivery.py).
+    """
+    if not parent_logged_in(request):
+        raise HTTPException(status_code=401)
+    try:
+        bank.parent_grant(conn, child_id=child_id, day=today(), minutes=minutes,
+                          reason=reason, at=now_iso())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return RedirectResponse("/parent#today", status_code=303)
 
 
 @app.post("/parent/review")

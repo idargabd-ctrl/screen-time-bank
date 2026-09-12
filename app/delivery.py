@@ -14,12 +14,20 @@
 
 Поэтому перед записью сверяется, совпадает ли текущее значение с тем, которое
 мы ожидаем там увидеть. Не совпало — значит вмешался человек. Разница
-запоминается как ручная надбавка дня и дальше прибавляется к каждой нашей
-цели: папа добавил 35, сын заработал ещё 10 — на планшете станет 15 + 35 + 10,
-а не спор двух рук. Раньше автоматика в этом месте останавливалась до конца
-дня; в первые недели родитель добавляет время руками часто, и остановка
-означала бы, что заработанное на сайте перестаёт доезжать. Надбавка видна
-родителю на /parent — это тоже данные пилота.
+запоминается как ручная надбавка дня — и это **аванс**, а не подарок:
+планшет получает max(база + ручное, цель сервера). Папа поставил 50 с утра,
+сын отметил домашку (цель 60) — на планшете 60, а не 95: заработанное
+догоняет выданное вперёд, а не ложится сверху. Подарок сверх заработанного
+делается через /parent — там он ложится в журнал и входит в цель.
+
+Урезание руками (ручная надбавка отрицательная) уважается буквально: цель
+минус урезанное. Дневной максимум ограничивает всё, что пишет сервер, — и
+цель, и аванс.
+
+Решение владельца 12.09 после первого живого дня: утренний ручной костыль
+(камера под лимитом) сложился с домашкой в 1 ч 55 мин. Раньше автоматика при
+чужой правке останавливалась до конца дня, и заработанное переставало
+доезжать; аванс убирает обе беды.
 """
 
 from __future__ import annotations
@@ -48,14 +56,29 @@ class Decision:
     manual_changed: bool = False
 
 
+def wanted_for(*, target: int, base: int, manual: int, daily_max: int) -> int:
+    """
+    Что должно стоять на планшете.
+
+    Ручная надбавка — аванс: max(база + ручное, цель). Урезание — буквально:
+    цель + (отрицательное) ручное. Максимум — потолок для всего.
+    """
+    if manual >= 0:
+        wanted = max(base + manual, target)
+    else:
+        wanted = target + manual
+    return max(0, min(daily_max, wanted))
+
+
 def decide(*, actual: int | None, target: int, applied: int | None, base: int,
-           manual: int = 0) -> Decision:
+           manual: int = 0, daily_max: int = 24 * 60) -> Decision:
     """
     actual  — что сейчас реально стоит в Family Link, None если не прочиталось
     target  — что мы хотим поставить (посчитано журналом)
     applied — что мы записали в прошлый раз и подтвердили, None если ещё не писали
     base    — базовая квота: единственное значение, которое ожидается в начале дня
-    manual  — ручная надбавка, накопленная за день
+    manual  — ручная надбавка, накопленная за день (аванс родителя)
+    daily_max — дневной максимум: сервер никогда не пишет больше
 
     Ожидаемое значение: если мы уже писали — то, что записали; если ещё нет —
     базовая квота из недельного расписания. Расхождение с ожидаемым — чужая
@@ -65,9 +88,9 @@ def decide(*, actual: int | None, target: int, applied: int | None, base: int,
     """
     if actual is None:
         return Decision(UNKNOWN, "не удалось прочитать текущий лимит", manual=manual,
-                        wanted=max(0, target + manual))
+                        wanted=wanted_for(target=target, base=base, manual=manual, daily_max=daily_max))
 
-    wanted = max(0, target + manual)
+    wanted = wanted_for(target=target, base=base, manual=manual, daily_max=daily_max)
     if actual == wanted:
         return Decision(CONFIRM, f"на устройстве уже {actual} мин", manual=manual, wanted=wanted)
 
@@ -76,8 +99,10 @@ def decide(*, actual: int | None, target: int, applied: int | None, base: int,
     note = ""
     if changed:
         delta = actual - expected
-        manual = manual + delta
-        wanted = max(0, target + manual)
+        # Подняли — аванс равен тому, что стоит на устройстве (сверх базы).
+        # Урезали — разница накапливается и вычитается из цели буквально.
+        manual = (actual - base) if delta > 0 else manual + delta
+        wanted = wanted_for(target=target, base=base, manual=manual, daily_max=daily_max)
         who = "после нашей записи" if applied is not None else "до первой записи за день"
         sign = "+" if delta > 0 else "−"
         note = (f"лимит изменён вручную {who}: ожидали {expected}, на устройстве {actual}, "

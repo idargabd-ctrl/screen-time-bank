@@ -143,6 +143,20 @@ CREATE TABLE IF NOT EXISTS checklist (
     UNIQUE (child_id, day)
 );
 
+-- Минуты от родителя: «камера не открылась», «за поход к бабушке». Ложатся в
+-- ту же квоту, что и награды, но отдельной строкой: это не заработанное, и
+-- сводка пилота показывает их отдельно. Ворота домашки на них не действуют —
+-- решение родителя выполняется сразу. Единственный законный способ добавить
+-- время мимо заданий; правка руками в Family Link считается авансом (delivery).
+CREATE TABLE IF NOT EXISTS parent_grant (
+    id         INTEGER PRIMARY KEY,
+    child_id   INTEGER NOT NULL REFERENCES child(id),
+    day        TEXT    NOT NULL,
+    minutes    INTEGER NOT NULL,
+    reason     TEXT    NOT NULL DEFAULT '',
+    created_at TEXT    NOT NULL
+);
+
 -- Журнал наград. UNIQUE — это и есть идемпотентность: две вкладки, повторная
 -- отправка и перезапуск сервера не создадут вторую награду за то же задание.
 CREATE TABLE IF NOT EXISTS reward (

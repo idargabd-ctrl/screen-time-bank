@@ -13,6 +13,43 @@
 
 <div class="stack">
 
+{# Сегодня: одна арифметика на всех. Кнопка «Добавить минут» — единственный
+   законный способ дать время мимо заданий; правка в Family Link — аванс. #}
+{% if balance %}
+<div class="board {% if delivery_row and delivery_row.manual_minutes %}board--unconfirmed{% endif %}" id="today">
+  <div class="board__label">Сегодня на планшете</div>
+  <div class="board__value">{{ delivery_row.applied_minutes if delivery_row and delivery_row.applied_minutes is not none else balance.target }}<small>мин</small></div>
+  <div class="board__stats">
+    <div class="stat"><b>{{ balance.base }}</b><span>база</span></div>
+    <div class="stat"><b>{{ "+" ~ balance.homework_bonus if balance.homework_bonus else "—" }}</b><span>домашка</span></div>
+    <div class="stat {% if not balance.gate_open and balance.earned %}stat--locked{% endif %}"><b>{{ balance.earned }}</b><span>за задания</span></div>
+    <div class="stat"><b>{{ "+" ~ balance.granted if balance.granted else "—" }}</b><span>от папы</span></div>
+  </div>
+  {% if delivery_row and delivery_row.manual_minutes %}
+    <p class="muted t-secondary mt-2">
+      Аванс руками в Family Link: {{ delivery_row.manual_minutes }} мин сверх базы.
+      Заработанное догоняет его, а не ложится сверху.
+    </p>
+  {% endif %}
+  <form method="post" action="/parent/grant" class="row mt-3">
+    <input type="hidden" name="child_id" value="{{ child_id }}">
+    <select class="input" name="minutes" aria-label="Сколько минут">
+      {% for m in (5, 10, 15, 20, 30, 45, 60) %}<option value="{{ m }}" {% if m == 15 %}selected{% endif %}>+{{ m }} мин</option>{% endfor %}
+    </select>
+    <input class="input" type="text" name="reason" placeholder="за что (видно в сводке)" maxlength="200">
+    <button class="btn btn--secondary" type="submit"
+            onclick="return confirm('Добавить минуты в квоту сегодня? Они уйдут на планшет через минуту.')">
+      Добавить минут
+    </button>
+  </form>
+  {% if grants %}
+    <p class="muted t-secondary mt-3">
+      {% for g in grants[:5] %}{{ g.day[5:] }} +{{ g.minutes }}{% if g.reason %} — {{ g.reason }}{% endif %}{% if not loop.last %}; {% endif %}{% endfor %}
+    </p>
+  {% endif %}
+</div>
+{% endif %}
+
 {% if not rows %}
   <div class="empty">Отметок пока нет.</div>
 {% endif %}
@@ -67,7 +104,7 @@
   {% else %}
     <table class="table table--stack">
       <thead>
-        <tr><th>День</th><th>Предложено</th><th>Начато</th><th>Закончено</th><th>Подсказок</th><th>Скучно</th><th>Норм.</th><th>Интересно</th><th>Руками</th></tr>
+        <tr><th>День</th><th>Предложено</th><th>Начато</th><th>Закончено</th><th>Подсказок</th><th>Скучно</th><th>Норм.</th><th>Интересно</th><th>От папы</th><th>Аванс</th></tr>
       </thead>
       <tbody>
       {% for d in pilot_days %}
@@ -80,14 +117,15 @@
           <td data-th="Скучно">{{ d.ratings.boring }}</td>
           <td data-th="Норм.">{{ d.ratings.ok }}</td>
           <td data-th="Интересно">{{ d.ratings.fun }}</td>
-          <td data-th="Руками">{{ ("+" ~ d.manual) if d.manual > 0 else (d.manual if d.manual else "—") }}</td>
+          <td data-th="От папы">{{ ("+" ~ d.granted) if d.granted else "—" }}</td>
+          <td data-th="Аванс">{{ ("+" ~ d.manual) if d.manual > 0 else (d.manual if d.manual else "—") }}</td>
         </tr>
       {% endfor %}
       </tbody>
     </table>
     <p class="muted t-secondary">
-      «Руками» — минуты, добавленные в Family Link мимо сайта; исполнитель их
-      замечает и прибавляет к заработанному, а не спорит. За период: {{ manual_total }} мин.
+      «От папы» — добавлено кнопкой выше, входит в квоту. «Аванс» — поставлено
+      руками в Family Link мимо сайта: заработанное догоняет его, а не ложится сверху.
     </p>
     <p class="muted t-secondary">Последние попытки:</p>
     <table class="table table--stack">

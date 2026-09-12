@@ -74,7 +74,8 @@ class PilotDay:
     finished: int     # заработано наград
     hints: int        # открыто подсказок в миссиях
     ratings: dict     # {"boring": n, "ok": n, "fun": n}
-    manual: int = 0   # минут добавлено родителем руками, по данным исполнителя
+    manual: int = 0   # аванс руками в Family Link, по данным исполнителя
+    granted: int = 0  # минут от родителя через /parent
 
 
 @dataclass(frozen=True)
@@ -123,6 +124,9 @@ def pilot_summary(conn: sqlite3.Connection, child_id: int, *, since: str) -> tup
     for r in conn.execute("SELECT day, manual_minutes FROM delivery WHERE child_id = ? AND day >= ?",
                           (child_id, since)):
         bucket(r["day"])["manual"] = int(r["manual_minutes"] or 0)
+    for r in conn.execute("SELECT day, SUM(minutes) m FROM parent_grant WHERE child_id = ? AND day >= ? GROUP BY day",
+                          (child_id, since)):
+        bucket(r["day"])["granted"] = int(r["m"])
 
     summary = [PilotDay(day=d, **days[d]) for d in sorted(days, reverse=True)]
 
