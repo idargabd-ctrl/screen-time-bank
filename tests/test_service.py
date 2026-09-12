@@ -368,3 +368,66 @@ def test_mission_state_exposes_previous_cards_without_answers(conn):
     assert prev["intro"] == "У Артёма 3 коробки." and prev["questions"][0]["prompt"] == "Сколько коробок?"
     assert "3" not in _json.dumps(prev["questions"], ensure_ascii=False).replace("Сколько", "")
     assert "answer" not in _json.dumps(prev)
+
+
+# --------------------------------------------------------------------------
+# «Хочу ещё минут»: сложные задания по просьбе
+# --------------------------------------------------------------------------
+
+
+def _add_extra(conn, task_id, title):
+    conn.execute(
+        "INSERT INTO task (id, kind, version, title, payload, reward_minutes, section, active) "
+        "VALUES (?, 'math', 1, ?, ?, 20, 'extra', 1)",
+        (task_id, title, json.dumps({"count": 3, "ops": ["+"], "max": 10})),
+    )
+
+
+def test_extra_tasks_are_not_offered_by_themselves(conn):
+    _add_extra(conn, 50, "Сложное")
+    view = service.day_view(conn, 1, DAY)
+    assert view.by_section(service.EXTRA) == []
+    assert service.can_request_extra(view) is False, "обычные ещё не зачтены"
+
+
+def test_extra_is_given_only_after_everything_open_is_earned_and_at_most_three(conn):
+    for tid in (50, 51, 52, 53):
+        _add_extra(conn, tid, f"Сложное {tid}")
+    with pytest.raises(service.ServiceError):
+        service.request_extra(conn, child_id=1, day=DAY)
+
+    for item in service.day_view(conn, 1, DAY).items:
+        pass_task(conn, item.assignment_id)
+    assert service.can_request_extra(service.day_view(conn, 1, DAY))
+    assert service.extra_left(conn, 1, DAY) == 3
+
+    first = service.request_extra(conn, child_id=1, day=DAY)
+    view = service.day_view(conn, 1, DAY)
+    extra = view.by_section(service.EXTRA)
+    assert [i.assignment_id for i in extra] == [first] and extra[0].reward_minutes == 20
+    # пока сложное не зачтено — второе не дают
+    with pytest.raises(service.ServiceError):
+        service.request_extra(conn, child_id=1, day=DAY)
+    pass_task(conn, first)
+    assert service.extra_left(conn, 1, DAY) == 2
+
+    second = service.request_extra(conn, child_id=1, day=DAY); pass_task(conn, second)
+    third = service.request_extra(conn, child_id=1, day=DAY); pass_task(conn, third)
+    assert service.extra_left(conn, 1, DAY) == 0
+    with pytest.raises(service.ServiceError, match="всё"):
+        service.request_extra(conn, child_id=1, day=DAY)
+    # три разных задания, никакого повтора в один день
+    ids = {i.task_id for i in service.day_view(conn, 1, DAY).by_section(service.EXTRA)}
+    assert len(ids) == 3
+    bal = bank.balance(conn, 1, DAY)
+    assert bal.earned == 30 + 20 + 60 and bal.target == 15 + 110
+
+
+def test_extra_picks_the_least_recently_seen_task(conn):
+    _add_extra(conn, 50, "A"); _add_extra(conn, 51, "B")
+    conn.execute("INSERT INTO assignment (child_id, task_id, day) VALUES (1, 50, '2026-09-01')")
+    for item in service.day_view(conn, 1, DAY).items:
+        pass_task(conn, item.assignment_id)
+    aid = service.request_extra(conn, child_id=1, day=DAY)
+    task_id = conn.execute("SELECT task_id FROM assignment WHERE id = ?", (aid,)).fetchone()["task_id"]
+    assert task_id == 51, "никогда не виденное — первым"

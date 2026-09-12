@@ -18,7 +18,7 @@ ENV_FILE = ROOT / ".env"
 # Значения по умолчанию. Живые настройки банка лежат в базе и меняются из
 # родительской панели — здесь только то, что нужно до открытия базы.
 DEFAULT_BASE_MINUTES = 15
-DEFAULT_DAILY_MAX_MINUTES = 120
+DEFAULT_DAILY_MAX_MINUTES = 180
 
 
 def read_env_file(path: Path = ENV_FILE) -> dict[str, str]:

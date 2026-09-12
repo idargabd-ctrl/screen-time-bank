@@ -238,6 +238,7 @@ def homework_policy(day: str) -> HomeworkPolicy:
 
 VPR = "vpr"
 MISSIONS = "missions"
+EXTRA = "extra"          # сложные задания по просьбе, см. request_extra
 
 # Сколько заданий каждого раздела назначается на день.
 #
@@ -249,7 +250,14 @@ MISSIONS = "missions"
 PER_DAY = {
     MISSIONS: 2,   # ежедневная практика способа
     VPR: 3,        # подготовка к работе; за шесть дней обойдёт все 18
+    EXTRA: 0,      # сложные задания: сами не назначаются, только по просьбе
 }
+
+# «Хочу ещё минут». Когда все пять заданий дня зачтены, сын может попросить
+# сложное задание — из раздела extra, за 20 минут. Не больше трёх в день:
+# с ними день упирается в 180 (15 + 45 + 60 + 60). Решение владельца 12.09:
+# лучше ещё одно трудное задание, чем ещё один торг за минуты.
+EXTRA_PER_DAY = 3
 
 
 def _assign_section(conn: sqlite3.Connection, child_id: int, day: str,
@@ -310,6 +318,57 @@ def _assign_section(conn: sqlite3.Connection, child_id: int, day: str,
             )
 
 
+def extra_left(conn: sqlite3.Connection, child_id: int, day: str) -> int:
+    """Сколько сложных заданий ещё можно попросить сегодня."""
+    taken = conn.execute(
+        "SELECT COUNT(*) AS c FROM assignment a JOIN task t ON t.id = a.task_id "
+        " WHERE a.child_id = ? AND a.day = ? AND t.section = ?",
+        (child_id, day, EXTRA),
+    ).fetchone()["c"]
+    return max(0, EXTRA_PER_DAY - taken)
+
+
+def can_request_extra(view: "DayView") -> bool:
+    """Кнопка появляется, когда всё обычное на день зачтено, а лишнее — тоже."""
+    regular = [i for i in view.items if i.section != EXTRA]
+    extras = view.by_section(EXTRA)
+    return bool(regular) and all(i.state == EARNED for i in regular + extras)
+
+
+def request_extra(conn: sqlite3.Connection, *, child_id: int, day: str) -> int:
+    """
+    Назначает одно сложное задание по просьбе. Возвращает id назначения.
+
+    Условия: обычные задания дня зачтены, предыдущее сложное тоже, лимит на
+    день не исчерпан. Из раздела берётся виденное давнее всего — как и в
+    ротации, чтобы повтор не приносил уже известных ответов.
+    """
+    view = day_view(conn, child_id, day)
+    if not can_request_extra(view):
+        raise ServiceError("Сначала закончи то, что уже открыто")
+    if extra_left(conn, child_id, day) <= 0:
+        raise ServiceError(f"На сегодня всё: {EXTRA_PER_DAY} сложных задания уже было")
+
+    last_seen = {r["task_id"]: r["last"] for r in conn.execute(
+        "SELECT task_id, MAX(day) AS last FROM assignment WHERE child_id = ? GROUP BY task_id",
+        (child_id,),
+    ).fetchall()}
+    rows = conn.execute("SELECT id FROM task WHERE active = 1 AND section = ? ORDER BY id",
+                        (EXTRA,)).fetchall()
+    candidates = [r["id"] for r in rows if last_seen.get(r["id"]) != day]
+    if not candidates:
+        raise ServiceError("Сложные задания кончились — скажи папе")
+    task_id = min(candidates, key=lambda t: (last_seen.get(t, ""), t))
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO assignment (child_id, task_id, day) VALUES (?, ?, ?) "
+            "ON CONFLICT (child_id, task_id, day) DO NOTHING",
+            (child_id, task_id, day),
+        )
+        assignment_id = cur.lastrowid
+    return assignment_id
+
+
 def ensure_day(conn: sqlite3.Connection, child_id: int, day: str) -> None:
     """
     Собирает день: по нескольку заданий из каждого раздела.
@@ -335,7 +394,7 @@ def ensure_day(conn: sqlite3.Connection, child_id: int, day: str) -> None:
                     "ON CONFLICT (child_id, task_id, day) DO NOTHING",
                     (child_id, day, section),
                 )
-        else:
+        elif limit > 0:
             _assign_section(conn, child_id, day, section, limit)
 
 

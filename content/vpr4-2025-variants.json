@@ -10,7 +10,7 @@
  ],
  "subject": "Математика, 4 класс",
  "source": "ВПР 2025, разбор целых вариантов",
- "section": "vpr",
+ "section": "extra",
  "tasks": [
   {
    "slug": "vpr4-2025-real-2",
@@ -18,7 +18,7 @@
    "version": 2,
    "title": "ВПР 2025, реальный вариант 2",
    "video": "ВПР по математике. Реальный вариант. 4 класс. 2025. Вариант №2. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -107,7 +107,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 1",
    "video": "ВПР по математике 4 класс. 1 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -191,7 +191,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 2",
    "video": "ВПР по математике 4 класс. 2 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -275,7 +275,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 3",
    "video": "ВПР по математике 4 класс. 3 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -359,7 +359,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 4",
    "video": "ВПР по математике 4 класс. 4 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -443,7 +443,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 5",
    "video": "ВПР по математике 4 класс. 5 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -532,7 +532,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 6",
    "video": "ВПР по математике 4 класс. 6 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -616,7 +616,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 7",
    "video": "ВПР по математике 4 класс. 7 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -700,7 +700,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 8",
    "video": "ВПР по математике 4 класс. 8 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -784,7 +784,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 9",
    "video": "ВПР по математике 4 класс. 9 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -868,7 +868,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 10",
    "video": "ВПР по математике 4 класс. 10 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -952,7 +952,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 11",
    "video": "ВПР по математике 4 класс. 11 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [
@@ -1036,7 +1036,7 @@
    "version": 2,
    "title": "ВПР 2025, вариант 12",
    "video": "ВПР по математике 4 класс. 12 вариант 2025. Разбор заданий",
-   "reward_minutes": 10,
+   "reward_minutes": 20,
    "payload": {
     "pass_ratio": 0.8,
     "questions": [

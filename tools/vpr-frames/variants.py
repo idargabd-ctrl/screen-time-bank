@@ -11,7 +11,7 @@ import json, sys
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parents[2] / "content" / "vpr4-2025-variants.json"
-REWARD = 10          # как и любое задание: ролик — помощь, а не работа
+REWARD = 20          # полный вариант — «сложное по просьбе», дороже обычного разбора
 PASS = 0.8
 
 TASKS = []
@@ -514,7 +514,7 @@ def main():
         ],
         "subject": "Математика, 4 класс",
         "source": "ВПР 2025, разбор целых вариантов",
-        "section": "vpr",
+        "section": "extra",   # не в ежедневной ротации: только по кнопке «Хочу ещё минут»
         "tasks": TASKS,
     }
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

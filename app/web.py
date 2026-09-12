@@ -152,8 +152,24 @@ def index(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
     return render(request, "day.html", view=view, delivery=delivery, nudge=nudge, morning=morning,
                   title_date=service.human_date(day), policy=service.homework_policy(day),
                   clock=bank.now(cfg.timezone).strftime("%H:%M"),
+                  extra_ok=service.can_request_extra(view),
+                  extra_left=service.extra_left(conn, child_id, day),
+                  extra_reward=conn.execute(
+                      "SELECT COALESCE(MIN(reward_minutes), 20) AS m FROM task WHERE active = 1 AND section = 'extra'"
+                  ).fetchone()["m"],
                   homework_state=bank.homework_state(conn, child_id, day),
                   child=conn.execute("SELECT name FROM child WHERE id = ?", (child_id,)).fetchone())
+
+
+@app.post("/extra")
+def request_extra(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+    """«Хочу ещё минут»: одно сложное задание за 20, не больше трёх в день."""
+    child_id = current_child(request)
+    try:
+        assignment_id = service.request_extra(conn, child_id=child_id, day=today())
+    except service.ServiceError as exc:
+        return render(request, "message.html", title="Пока нельзя", text=str(exc))
+    return RedirectResponse(f"/task/{assignment_id}", status_code=303)
 
 
 @app.get("/checklist", response_class=HTMLResponse)

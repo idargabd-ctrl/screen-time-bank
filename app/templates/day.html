@@ -207,6 +207,33 @@
   </div>
 {% endif %}
 
+{% set extra = view.by_section("extra") %}
+{% if extra %}
+  <div>
+    <h2>Сложные, по просьбе</h2>
+    <p class="muted t-secondary">Труднее обычных и дороже: {{ extra_reward }} мин за каждое.</p>
+    {{ task_list(extra) }}
+  </div>
+{% endif %}
+
+{# «Хочу ещё минут»: только когда всё открытое зачтено. Сложнее и дороже,
+   не больше трёх в день — ещё одно трудное задание вместо ещё одного торга. #}
+{% if extra_ok and extra_left > 0 %}
+  <form method="post" action="/extra">
+    <button class="btn btn--secondary btn--wide btn--lg" type="submit">
+      Хочу ещё минут — сложное задание за {{ extra_reward }}
+    </button>
+    <p class="muted center t-secondary mt-2">
+      Осталось {{ extra_left }} из {{ 3 }} на сегодня. Сложнее обычных: полный вариант ВПР или миссия потруднее.
+    </p>
+  </form>
+{% elif extra_ok and extra_left == 0 %}
+  <div class="empty">
+    <div class="empty__title">На сегодня всё</div>
+    Три сложных задания уже были. Остальное — завтра.
+  </div>
+{% endif %}
+
 {% if not missions and not vpr %}
   <div class="empty">
     <div class="empty__title">Заданий на сегодня нет</div>
