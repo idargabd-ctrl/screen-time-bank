@@ -22,8 +22,9 @@ from app import delivery  # noqa: E402
 BASE = 15
 
 
-def d(actual, target, applied=None, base=BASE):
-    return delivery.decide(actual=actual, target=target, applied=applied, base=base)
+def d(actual, target, applied=None, base=BASE, manual=0):
+    return delivery.decide(actual=actual, target=target, applied=applied, base=base,
+                           manual=manual)
 
 
 # --------------------------------------------------------------------------
@@ -53,43 +54,69 @@ def test_unreadable_state_is_not_a_reason_to_write():
 # --------------------------------------------------------------------------
 
 
-def test_manual_grant_before_our_first_write_is_left_alone():
+def test_manual_grant_before_our_first_write_is_kept_as_an_offset():
     """
     Ровно тот случай, что случился в жизни: цель 35, на планшете 120.
 
-    Записать 35 значило бы отнять время, которое папа выдал руками.
+    Записать 35 значило бы отнять время, которое папа выдал руками. Разница
+    с базой (105) становится надбавкой дня, а заработанные 20 идут поверх:
+    на планшете должно стать 140.
     """
     decision = d(actual=120, target=35)
-    assert decision.action == delivery.MANUAL
+    assert decision.action == delivery.WRITE
+    assert decision.manual_changed
+    assert decision.manual == 105
+    assert decision.wanted == 140
     assert "120" in decision.reason
 
 
-def test_manual_change_after_our_write_is_left_alone():
-    """Мы поставили 35, кто-то сделал 90. Не спорим."""
+def test_manual_change_after_our_write_moves_with_the_next_reward():
+    """Мы поставили 35, папа сделал 90, сын заработал ещё 10: пишем 100."""
     decision = d(actual=90, target=45, applied=35)
-    assert decision.action == delivery.MANUAL
+    assert decision.action == delivery.WRITE
+    assert decision.manual == 55
+    assert decision.wanted == 100
     assert "после нашей записи" in decision.reason
+
+
+def test_offset_is_carried_into_later_decisions():
+    """Надбавка запомнена: следующая награда прибавляется к ней, а не к цели."""
+    decision = d(actual=100, target=55, applied=100, manual=55)
+    assert decision.action == delivery.WRITE
+    assert decision.wanted == 110
+    assert not decision.manual_changed
 
 
 def test_manual_lowering_is_also_respected():
     """Родитель урезал время в наказание — автоматика не возвращает его."""
-    assert d(actual=5, target=35, applied=35).action == delivery.MANUAL
+    decision = d(actual=5, target=35, applied=35)
+    assert decision.action == delivery.CONFIRM
+    assert decision.manual == -30
+    # заработанное дальше идёт поверх урезанного, а не отменяет его
+    assert d(actual=5, target=45, applied=5, manual=-30).wanted == 15
+
+
+def test_offset_never_pushes_below_zero():
+    assert d(actual=0, target=15, applied=15).wanted == 0
 
 
 def test_manual_value_equal_to_target_needs_no_argument():
     """Родитель случайно выставил ровно нашу цель — писать нечего."""
-    assert d(actual=35, target=35).action == delivery.CONFIRM
+    decision = d(actual=35, target=35)
+    assert decision.action == delivery.CONFIRM
+    assert decision.manual == 0
 
 
-def test_it_recovers_when_the_value_returns_to_expected():
+def test_late_google_apply_is_not_mistaken_for_a_manual_change():
     """
-    Вмешательство не блокирует навсегда.
-
-    Родитель вернул лимит к тому, что мы записывали, — работа продолжается.
-    Это важно: иначе один ручной сдвиг замораживал бы выдачу до конца дня.
+    Записали 45, Google применил с опозданием: при чтении было 35, строка
+    осталась «не применено». Следующее чтение даёт 45 — это наша запись, а
+    не рука родителя, и надбавка не должна появиться.
     """
-    assert d(actual=90, target=45, applied=35).action == delivery.MANUAL
-    assert d(actual=35, target=45, applied=35).action == delivery.WRITE
+    decision = d(actual=45, target=45, applied=35)
+    assert decision.action == delivery.CONFIRM
+    assert not decision.manual_changed
+    assert decision.manual == 0
 
 
 # --------------------------------------------------------------------------
@@ -123,10 +150,12 @@ def test_weekly_schedule_not_matching_our_base_is_reported():
     База в Family Link оказалась не 15, а 30.
 
     Это расхождение между нашим представлением и реальностью, и молча
-    перетирать его нельзя: может быть, расписание поменяли осознанно.
+    перетирать его нельзя: 30 принимается как есть, разница уходит в надбавку
+    и попадает в лог и на /parent.
     """
     decision = d(actual=30, target=15)
-    assert decision.action == delivery.MANUAL
+    assert decision.action == delivery.CONFIRM
+    assert decision.manual_changed
     assert "30" in decision.reason
 
 

@@ -88,6 +88,20 @@
     <svg class="icon icon--sm"><use href="/static/icons.svg#i-check"></use></svg>
     Домашка отмечена: +{{ b.homework_bonus }} мин. Задания открыты.
   </div>
+{% elif homework_state == "nothing_assigned" %}
+  {# «Не задавали» — не приговор на день: если домашка всё-таки нашлась или
+     решил сделать на понедельник, снимок тетради по-прежнему стоит +45. #}
+  <div class="gate gate--off">
+    <div class="gate__title">Отмечено: сегодня не задавали</div>
+    Задания открыты. Если всё-таки сделаешь домашку — покажи тетрадь, за неё
+    +{{ b.homework_minutes }} мин.
+    <div class="gate__actions">
+      <a class="btn btn--ghost" href="/homework/photo">
+        <svg class="icon"><use href="/static/icons.svg#i-camera"></use></svg>
+        Покажи тетрадь
+      </a>
+    </div>
+  </div>
 {% endif %}
 
 {# Состояние выдачи. «Принято» и «применено» — разные вещи, и врать здесь

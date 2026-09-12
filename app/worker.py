@@ -61,14 +61,23 @@ def row_for(conn: sqlite3.Connection, child_id: int, day: str) -> sqlite3.Row | 
 
 
 def save(conn: sqlite3.Connection, *, child_id: int, day: str, status: str,
-         applied: int | None, error: str, bump: bool, at: str) -> None:
+         applied: int | None, error: str, bump: bool, at: str,
+         manual: int | None = None) -> None:
     with conn:
         conn.execute(
             "UPDATE delivery SET status = ?, applied_minutes = ?, last_error = ?, "
-            "       tries = tries + ?, updated_at = ? "
+            "       tries = tries + ?, updated_at = ?, "
+            "       manual_minutes = COALESCE(?, manual_minutes) "
             " WHERE child_id = ? AND day = ?",
-            (status, applied, error, 1 if bump else 0, at, child_id, day),
+            (status, applied, error, 1 if bump else 0, at, manual, child_id, day),
         )
+
+
+# Когда всё подтверждено, лимит всё равно перечитывается — но реже: так
+# замечается ручная надбавка родителя, даже если сын в это время ничего не
+# решает. Ключ — ребёнок, значение — время последней проверки.
+_last_manual_check: dict[int, float] = {}
+MANUAL_CHECK_EVERY = 300   # секунд
 
 
 def handle(conn: sqlite3.Connection, fl: familylink.FamilyLink,
@@ -81,10 +90,16 @@ def handle(conn: sqlite3.Connection, fl: familylink.FamilyLink,
     if row is None:
         return
 
-    if row["status"] == delivery.CONFIRMED and row["applied_minutes"] == row["target_minutes"]:
-        return   # нечего делать, но проверку ручной правки ниже всё равно делаем реже
+    manual = int(row["manual_minutes"] or 0)
+    settled = (row["status"] == delivery.CONFIRMED
+               and row["applied_minutes"] == row["target_minutes"] + manual)
+    if settled:
+        # Нечего выдавать. Ручную правку всё же ищем — раз в несколько минут.
+        if time.monotonic() - _last_manual_check.get(child["id"], 0.0) < MANUAL_CHECK_EVERY:
+            return
+    _last_manual_check[child["id"]] = time.monotonic()
 
-    if row["tries"] >= MAX_TRIES and row["status"] != delivery.STATUS_MANUAL:
+    if row["tries"] >= MAX_TRIES:
         return   # перестаём долбить: нужна человеческая помощь
 
     actual = fl.read_daily_limit(device_id=child["fl_device_id"])
@@ -93,7 +108,10 @@ def handle(conn: sqlite3.Connection, fl: familylink.FamilyLink,
         target=row["target_minutes"],
         applied=row["applied_minutes"],
         base=balance.base,
+        manual=manual,
     )
+    if decision.manual_changed:
+        log(f"{child['name']}: РУЧНАЯ ПРАВКА — {decision.reason}")
 
     if decision.action == delivery.UNKNOWN:
         # Не читается — скорее всего нет сети. Попытки не расходуем, чтобы
@@ -105,45 +123,41 @@ def handle(conn: sqlite3.Connection, fl: familylink.FamilyLink,
              applied=row["applied_minutes"], error=decision.reason, bump=False, at=at)
         return
 
-    if decision.action == delivery.MANUAL:
-        if row["status"] != delivery.STATUS_MANUAL:
-            log(f"{child['name']}: РУЧНАЯ ПРАВКА, не трогаю. {decision.reason}")
-        save(conn, child_id=child["id"], day=day, status=delivery.STATUS_MANUAL,
-             applied=row["applied_minutes"], error=decision.reason, bump=False, at=at)
-        return
-
     if decision.action == delivery.CONFIRM:
         if row["status"] != delivery.CONFIRMED:
             back = " (связь восстановилась)" if row["status"] == delivery.STATUS_UNKNOWN else ""
             log(f"{child['name']}: {decision.reason}{back}")
         save(conn, child_id=child["id"], day=day, status=delivery.CONFIRMED,
-             applied=actual, error="", bump=False, at=at)
+             applied=actual, error="", bump=False, at=at, manual=decision.manual)
         return
 
-    # Пишем.
-    log(f"{child['name']}: {decision.reason}")
+    # Пишем. Абсолютное значение: цель из журнала плюс ручная надбавка дня.
+    if not decision.manual_changed:
+        log(f"{child['name']}: {decision.reason}")
     try:
         fl.write_daily_limit(child_id=child["fl_child_id"],
                              device_id=child["fl_device_id"],
-                             minutes=row["target_minutes"])
+                             minutes=decision.wanted)
     except (familylink.FamilyLinkError, ValueError) as exc:
         log(f"{child['name']}: запись не удалась — {exc}")
         save(conn, child_id=child["id"], day=day, status=delivery.STATUS_UNKNOWN,
-             applied=row["applied_minutes"], error=str(exc)[:300], bump=True, at=at)
+             applied=row["applied_minutes"], error=str(exc)[:300], bump=True, at=at,
+             manual=decision.manual)
         return
 
     time.sleep(AFTER_WRITE_PAUSE)
     again = fl.read_daily_limit(device_id=child["fl_device_id"])
-    status, error = delivery.verdict_after_write(actual=again, target=row["target_minutes"])
+    status, error = delivery.verdict_after_write(actual=again, target=decision.wanted)
 
     if status == delivery.CONFIRMED:
         log(f"{child['name']}: подтверждено {again} мин")
         save(conn, child_id=child["id"], day=day, status=status,
-             applied=again, error="", bump=False, at=at)
+             applied=again, error="", bump=False, at=at, manual=decision.manual)
     else:
         log(f"{child['name']}: {error}")
         save(conn, child_id=child["id"], day=day, status=status,
-             applied=row["applied_minutes"], error=error, bump=True, at=at)
+             applied=row["applied_minutes"], error=error, bump=True, at=at,
+             manual=decision.manual)
 
 
 def cycle(conn: sqlite3.Connection, fl: familylink.FamilyLink, cfg) -> None:

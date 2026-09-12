@@ -134,6 +134,10 @@ def index(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
         return render(request, "login.html", error=None)
 
     day = today()
+    # Утренний чек-лист — один раз в день, до заданий. Ритуал входа, не сделка.
+    if service.checklist_state(conn, child_id, day) is None:
+        return RedirectResponse("/checklist", status_code=303)
+
     view = service.day_view(conn, child_id, day)
     # Ответил «нет» на вопрос про домашку: ничего не записываем, только
     # напоминаем, что она стоит минут. Флаг живёт в адресе, а не в базе.
@@ -146,7 +150,26 @@ def index(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
 
     return render(request, "day.html", view=view, delivery=delivery, nudge=nudge,
                   title_date=service.human_date(day), policy=service.homework_policy(day),
+                  homework_state=bank.homework_state(conn, child_id, day),
                   child=conn.execute("SELECT name FROM child WHERE id = ?", (child_id,)).fetchone())
+
+
+@app.get("/checklist", response_class=HTMLResponse)
+def checklist_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+    child_id = current_child(request)
+    day = today()
+    return render(request, "checklist.html", items=service.checklist_items(conn),
+                  state=service.checklist_state(conn, child_id, day) or {},
+                  title_date=service.human_date(day))
+
+
+@app.post("/checklist")
+async def checklist_submit(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+    child_id = current_child(request)
+    form = await request.form()
+    checked = [str(v) for v in form.getlist("item")]
+    service.complete_checklist(conn, child_id=child_id, day=today(), checked=checked, at=now_iso())
+    return RedirectResponse("/", status_code=303)
 
 
 def source_of(request: Request) -> str:
@@ -319,8 +342,10 @@ def parent_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
         payload = json.loads(d.pop("payload") or "{}")
         d["cards"] = tasks.mission_cards(payload) if d["kind"] == tasks.MISSION else []
         d["questions"] = [] if d["kind"] == tasks.MISSION else tasks.generate(d["kind"], payload, seed=1)
+    checklists = service.checklist_history(conn, child["id"], since=since) if child else []
     return render(request, "parent.html", rows=rows, today=today(), drafts=drafts,
-                  pilot_days=pilot_days, pilot_items=pilot_items[:30])
+                  pilot_days=pilot_days, pilot_items=pilot_items[:30], checklists=checklists,
+                  manual_total=sum(d.manual for d in pilot_days))
 
 
 @app.post("/parent/review")
@@ -477,13 +502,13 @@ async def task_submit(request: Request, assignment_id: int,
 
 
 @app.post("/rate/{attempt_id}")
-def rate(request: Request, attempt_id: int, rating: str = Form(...),
+def rate(request: Request, attempt_id: int, rating: str = Form(...), comment: str = Form(""),
          conn: sqlite3.Connection = Depends(get_conn)):
     """Добровольная оценка задания. Ничего не даёт и ничего не отнимает."""
     child_id = current_child(request)
     try:
         service.rate_attempt(conn, child_id=child_id, attempt_id=attempt_id,
-                             rating=rating, at=now_iso())
+                             rating=rating, comment=comment, at=now_iso())
     except service.ServiceError:
         pass   # чужая или несуществующая попытка — просто на главную
     return RedirectResponse("/", status_code=303)

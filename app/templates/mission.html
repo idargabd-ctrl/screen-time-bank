@@ -20,6 +20,26 @@
 
 <div class="stack">
 
+{# Пройденные карточки — свёрнуты, но под рукой: следующая карточка часто
+   ссылается на условие предыдущей, и его нужно перечитать, а не вспоминать. #}
+{% if state.previous %}
+  <details class="help">
+    <summary class="btn btn--ghost btn--wide">
+      <svg class="icon"><use href="/static/icons.svg#i-chevron-down"></use></svg>
+      Перечитать {{ "предыдущую карточку" if state.previous|length == 1 else "предыдущие карточки" }}
+    </summary>
+    <div class="stack-tight">
+    {% for c in state.previous %}
+      <div class="panel">
+        <div class="muted t-caption">карточка {{ c.n }} · {{ c.title }}</div>
+        {% if c.intro %}<p>{{ c.intro }}</p>{% endif %}
+        {% for q in c.questions %}<p class="muted t-secondary">{{ q.n }}. {{ q.prompt }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    </div>
+  </details>
+{% endif %}
+
 {# Условие — панель с акцентной полосой. Декор внутрь условия не заходит. #}
 {% if state.card.intro %}
   <div class="panel panel--marked">{{ state.card.intro }}</div>

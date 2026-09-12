@@ -127,7 +127,20 @@ CREATE TABLE IF NOT EXISTS rating (
     task_id    INTEGER NOT NULL REFERENCES task(id),
     day        TEXT    NOT NULL,
     rating     TEXT    NOT NULL,
+    comment    TEXT    NOT NULL DEFAULT '',
     created_at TEXT    NOT NULL
+);
+
+-- Утренний чек-лист: «почистил зубы», «заправил кровать». Показывается один
+-- раз в день сразу после входа, до заданий. На минуты не влияет — это ритуал
+-- входа, а не сделка; что отмечено, видит родитель.
+CREATE TABLE IF NOT EXISTS checklist (
+    id         INTEGER PRIMARY KEY,
+    child_id   INTEGER NOT NULL REFERENCES child(id),
+    day        TEXT    NOT NULL,
+    items      TEXT    NOT NULL,          -- JSON: {"пункт": true/false}
+    done_at    TEXT    NOT NULL,
+    UNIQUE (child_id, day)
 );
 
 -- Журнал наград. UNIQUE — это и есть идемпотентность: две вкладки, повторная
@@ -165,6 +178,7 @@ CREATE TABLE IF NOT EXISTS delivery (
     target_minutes  INTEGER NOT NULL,
     applied_minutes INTEGER,
     status          TEXT    NOT NULL DEFAULT 'pending',
+    manual_minutes  INTEGER NOT NULL DEFAULT 0,   -- надбавка, поставленная родителем руками
     tries           INTEGER NOT NULL DEFAULT 0,
     last_error      TEXT,
     created_at      TEXT    NOT NULL,
@@ -219,6 +233,8 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("homework", "photo_file", "TEXT NOT NULL DEFAULT ''"),
     ("task", "skill", "TEXT NOT NULL DEFAULT ''"),
     ("task", "status", "TEXT NOT NULL DEFAULT 'active'"),
+    ("delivery", "manual_minutes", "INTEGER NOT NULL DEFAULT 0"),
+    ("rating", "comment", "TEXT NOT NULL DEFAULT ''"),
 ]
 
 

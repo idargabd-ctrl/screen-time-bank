@@ -40,11 +40,14 @@ RATING_LABELS = {"boring": "скучно", "ok": "нормально", "fun": "�
 
 
 def rate_attempt(conn: sqlite3.Connection, *, child_id: int, attempt_id: int,
-                 rating: str, at: str) -> None:
+                 rating: str, at: str, comment: str = "") -> None:
     """
     Ставит оценку попытке. Добровольно: методика просит одну оценку в конце,
     а не опрос после каждого клика. Повторная оценка заменяет прежнюю.
+    Комментарий — по желанию, пара слов «почему»: это единственное место,
+    где сын говорит с родителем своими словами, поэтому он хранится как есть.
     """
+    comment = " ".join(comment.split())[:500]
     if rating not in RATINGS:
         raise ServiceError("Непонятная оценка")
     row = conn.execute(
@@ -55,10 +58,11 @@ def rate_attempt(conn: sqlite3.Connection, *, child_id: int, attempt_id: int,
         raise ServiceError("Это не твоя попытка")
     with conn:
         conn.execute(
-            "INSERT INTO rating (child_id, attempt_id, task_id, day, rating, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?) "
-            "ON CONFLICT (attempt_id) DO UPDATE SET rating = excluded.rating, created_at = excluded.created_at",
-            (child_id, attempt_id, row["task_id"], row["day"], rating, at),
+            "INSERT INTO rating (child_id, attempt_id, task_id, day, rating, comment, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT (attempt_id) DO UPDATE SET rating = excluded.rating, "
+            "  comment = excluded.comment, created_at = excluded.created_at",
+            (child_id, attempt_id, row["task_id"], row["day"], rating, comment, at),
         )
 
 
@@ -70,6 +74,7 @@ class PilotDay:
     finished: int     # заработано наград
     hints: int        # открыто подсказок в миссиях
     ratings: dict     # {"boring": n, "ok": n, "fun": n}
+    manual: int = 0   # минут добавлено родителем руками, по данным исполнителя
 
 
 @dataclass(frozen=True)
@@ -80,6 +85,7 @@ class PilotItem:
     finished: bool
     hints: int
     rating: str       # "" если не оценил
+    comment: str = ""
 
 
 def pilot_summary(conn: sqlite3.Connection, child_id: int, *, since: str) -> tuple[list[PilotDay], list[PilotItem]]:
@@ -112,6 +118,11 @@ def pilot_summary(conn: sqlite3.Connection, child_id: int, *, since: str) -> tup
     for r in conn.execute("SELECT day, rating, COUNT(*) n FROM rating WHERE child_id = ? AND day >= ? GROUP BY day, rating",
                           (child_id, since)):
         bucket(r["day"])["ratings"][r["rating"]] = r["n"]
+    # Ручная надбавка — то, что родитель поставил в Family Link мимо сайта.
+    # Исполнитель замечает её и запоминает в строке выдачи дня.
+    for r in conn.execute("SELECT day, manual_minutes FROM delivery WHERE child_id = ? AND day >= ?",
+                          (child_id, since)):
+        bucket(r["day"])["manual"] = int(r["manual_minutes"] or 0)
 
     summary = [PilotDay(day=d, **days[d]) for d in sorted(days, reverse=True)]
 
@@ -119,14 +130,61 @@ def pilot_summary(conn: sqlite3.Connection, child_id: int, *, since: str) -> tup
     for r in conn.execute(
         "SELECT a.day, t.title, t.skill, at.hints_used, at.id AS attempt_id, "
         "       (SELECT 1 FROM reward rw WHERE rw.child_id = a.child_id AND rw.task_id = a.task_id AND rw.day = a.day) AS done, "
-        "       (SELECT rating FROM rating rt WHERE rt.attempt_id = at.id) AS rating "
+        "       (SELECT rating FROM rating rt WHERE rt.attempt_id = at.id) AS rating, "
+        "       (SELECT comment FROM rating rt WHERE rt.attempt_id = at.id) AS comment "
         "  FROM attempt at JOIN assignment a ON a.id = at.assignment_id JOIN task t ON t.id = a.task_id "
         " WHERE a.child_id = ? AND a.day >= ? ORDER BY a.day DESC, at.id DESC", (child_id, since)):
         opened = json.loads(r["hints_used"] or "{}")
         items.append(PilotItem(day=r["day"], title=r["title"], skill=r["skill"] or "",
                                finished=bool(r["done"]), hints=sum(int(v) for v in opened.values()),
-                               rating=RATING_LABELS.get(r["rating"] or "", "")))
+                               rating=RATING_LABELS.get(r["rating"] or "", ""),
+                               comment=r["comment"] or ""))
     return summary, items
+
+
+# --------------------------------------------------------------------------
+# Утренний чек-лист
+# --------------------------------------------------------------------------
+
+SETTING_CHECKLIST = "checklist_items"      # пункты через перевод строки
+CHECKLIST_DEFAULT = ("Почистил зубы", "Заправил кровать")
+
+
+def checklist_items(conn: sqlite3.Connection) -> list[str]:
+    raw = bank.get_setting(conn, SETTING_CHECKLIST)
+    items = [line.strip() for line in raw.splitlines() if line.strip()]
+    return items or list(CHECKLIST_DEFAULT)
+
+
+def checklist_state(conn: sqlite3.Connection, child_id: int, day: str) -> dict | None:
+    """Что отмечено сегодня, или None — чек-лист ещё не проходили."""
+    row = conn.execute("SELECT items FROM checklist WHERE child_id = ? AND day = ?",
+                       (child_id, day)).fetchone()
+    return json.loads(row["items"]) if row else None
+
+
+def complete_checklist(conn: sqlite3.Connection, *, child_id: int, day: str,
+                       checked: list[str], at: str) -> dict:
+    """
+    Записывает утренний чек-лист. Неотмеченные пункты тоже сохраняются —
+    как false: родителю важно видеть, что пропущено, а не только что сделано.
+    """
+    items = {name: (name in checked) for name in checklist_items(conn)}
+    with conn:
+        conn.execute(
+            "INSERT INTO checklist (child_id, day, items, done_at) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT (child_id, day) DO UPDATE SET items = excluded.items, done_at = excluded.done_at",
+            (child_id, day, json.dumps(items, ensure_ascii=False), at),
+        )
+    return items
+
+
+def checklist_history(conn: sqlite3.Connection, child_id: int, *, since: str) -> list[dict]:
+    return [
+        {"day": r["day"], "at": r["done_at"], "items": json.loads(r["items"])}
+        for r in conn.execute("SELECT day, done_at, items FROM checklist "
+                              " WHERE child_id = ? AND day >= ? ORDER BY day DESC", (child_id, since))
+    ]
 
 
 # --------------------------------------------------------------------------
@@ -511,6 +569,8 @@ class MissionState:
     stage: int                 # номер текущей карточки, с нуля
     total: int                 # сколько карточек всего
     card: dict                 # текущая карточка в виде для браузера
+    previous: tuple            # пройденные карточки: заголовок, условие, вопросы —
+                               # чтобы перечитать, если следующая на них ссылается
     finished: bool
     reward_minutes: int
     title: str
@@ -525,10 +585,15 @@ def mission_state(conn: sqlite3.Connection, *, child_id: int, attempt_id: int) -
     finished = stage >= len(cards)
     index = min(stage, len(cards) - 1) if cards else 0
     card = cards[index].for_child(index + 1, int(opened.get(str(index), 0))) if cards else {}
+    previous = tuple(
+        {"n": i + 1, "title": c.title, "intro": c.intro,
+         "questions": [q.for_child(k) for k, q in enumerate(c.questions, start=1)]}
+        for i, c in enumerate(cards[:index])
+    )
 
     return MissionState(
         attempt_id=attempt_id, stage=stage, total=len(cards), card=card,
-        finished=finished, reward_minutes=row["reward_minutes"], title=row["title"],
+        previous=previous, finished=finished, reward_minutes=row["reward_minutes"], title=row["title"],
     )
 
 

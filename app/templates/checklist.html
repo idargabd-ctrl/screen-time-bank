@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Утро{% endblock %}
+
+{% block body %}
+<div class="screen-head">
+  <h1>{{ title_date }}</h1>
+  <span class="screen-head__who">перед заданиями</span>
+</div>
+
+{# Ритуал входа, не сделка: минут за галочки нет, и это не скрывается.
+   Каждый пункт — отдельная цель нажатия в 56 px. #}
+<form method="post" action="/checklist" class="stack">
+  <p class="muted">Отметь, что уже сделал, и переходи к заданиям.</p>
+
+  <div class="stack-tight">
+    {% for item in items %}
+      <label class="check">
+        <input type="checkbox" name="item" value="{{ item }}" {% if state.get(item) %}checked{% endif %}>
+        {{ item }}
+      </label>
+    {% endfor %}
+  </div>
+
+  <button class="btn btn--wide btn--lg" type="submit">К заданиям</button>
+</form>
+{% endblock %}

@@ -46,10 +46,14 @@
    кнопка «К заданиям» рядом и ничего не теряется. #}
 <div class="rate">
   <div class="rate__head"><b>Как тебе задание?</b> <span class="muted t-secondary">Можно не отвечать.</span></div>
-  <form method="post" action="/rate/{{ attempt_id }}" class="rate__opts">
-    <button class="btn btn--ghost" type="submit" name="rating" value="boring">Скучно</button>
-    <button class="btn btn--ghost" type="submit" name="rating" value="ok">Нормально</button>
-    <button class="btn btn--ghost" type="submit" name="rating" value="fun">Интересно</button>
+  <form method="post" action="/rate/{{ attempt_id }}" class="stack-tight">
+    <textarea class="input" name="comment" rows="2" maxlength="500"
+              placeholder="Можешь написать почему — папа прочитает"></textarea>
+    <div class="rate__opts">
+      <button class="btn btn--ghost" type="submit" name="rating" value="boring">Скучно</button>
+      <button class="btn btn--ghost" type="submit" name="rating" value="ok">Нормально</button>
+      <button class="btn btn--ghost" type="submit" name="rating" value="fun">Интересно</button>
+    </div>
   </form>
 </div>
 

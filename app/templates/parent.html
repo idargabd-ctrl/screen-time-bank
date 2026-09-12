@@ -67,7 +67,7 @@
   {% else %}
     <table class="table table--stack">
       <thead>
-        <tr><th>День</th><th>Предложено</th><th>Начато</th><th>Закончено</th><th>Подсказок</th><th>Скучно</th><th>Норм.</th><th>Интересно</th></tr>
+        <tr><th>День</th><th>Предложено</th><th>Начато</th><th>Закончено</th><th>Подсказок</th><th>Скучно</th><th>Норм.</th><th>Интересно</th><th>Руками</th></tr>
       </thead>
       <tbody>
       {% for d in pilot_days %}
@@ -80,10 +80,15 @@
           <td data-th="Скучно">{{ d.ratings.boring }}</td>
           <td data-th="Норм.">{{ d.ratings.ok }}</td>
           <td data-th="Интересно">{{ d.ratings.fun }}</td>
+          <td data-th="Руками">{{ ("+" ~ d.manual) if d.manual > 0 else (d.manual if d.manual else "—") }}</td>
         </tr>
       {% endfor %}
       </tbody>
     </table>
+    <p class="muted t-secondary">
+      «Руками» — минуты, добавленные в Family Link мимо сайта; исполнитель их
+      замечает и прибавляет к заработанному, а не спорит. За период: {{ manual_total }} мин.
+    </p>
     <p class="muted t-secondary">Последние попытки:</p>
     <table class="table table--stack">
       <thead>
@@ -96,7 +101,32 @@
           <td data-th="Задание">{{ i.title }} <span class="muted">{{ i.skill }}</span></td>
           <td data-th="Итог">{{ "зачтено" if i.finished else "не закончено" }}</td>
           <td data-th="Подсказок">{{ i.hints }}</td>
-          <td data-th="Оценка">{{ i.rating or "—" }}</td>
+          <td data-th="Оценка">{{ i.rating or "—" }}{% if i.comment %}<br><span class="muted">«{{ i.comment }}»</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+
+{# Утренний чек-лист: что отмечено при входе. Ритуал, не сделка. #}
+<div>
+  <h2 id="checklist">Утренний чек-лист</h2>
+  {% if not checklists %}
+    <p class="muted">Ещё ни разу не проходили.</p>
+  {% else %}
+    <table class="table table--stack">
+      <thead><tr><th>День</th><th>Когда</th><th>Отмечено</th></tr></thead>
+      <tbody>
+      {% for c in checklists %}
+        <tr>
+          <td data-th="День">{{ c.day[5:] }}</td>
+          <td data-th="Когда">{{ c.at[11:16] }}</td>
+          <td data-th="Отмечено">
+            {% for name, ok in c["items"].items() %}
+              <span class="badge {{ 'badge--accent' if ok else '' }}">{{ name }}{% if not ok %} — нет{% endif %}</span>
+            {% endfor %}
+          </td>
         </tr>
       {% endfor %}
       </tbody>

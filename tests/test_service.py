@@ -305,3 +305,66 @@ def test_pilot_summary_counts_offered_started_finished_and_ratings(conn):
     assert days[0].started == 1 and days[0].finished == 1
     assert days[0].ratings == {"boring": 1, "ok": 0, "fun": 0}
     assert items[0].finished is True and items[0].rating == "скучно"
+
+
+def test_rating_comment_is_kept_trimmed_and_replaced(conn):
+    view = service.day_view(conn, 1, DAY)
+    attempt_id = service.start_attempt(conn, child_id=1, assignment_id=view.items[0].assignment_id, at=AT)
+    service.rate_attempt(conn, child_id=1, attempt_id=attempt_id, rating="ok", at=AT,
+                         comment="  слишком   длинно\nчитать ")
+    assert conn.execute("SELECT comment FROM rating").fetchone()["comment"] == "слишком длинно читать"
+    service.rate_attempt(conn, child_id=1, attempt_id=attempt_id, rating="ok", at=AT, comment="x" * 900)
+    assert len(conn.execute("SELECT comment FROM rating").fetchone()["comment"]) == 500
+    _, items = service.pilot_summary(conn, 1, since=DAY)
+    assert items[0].comment.startswith("xxx")
+
+
+def test_pilot_summary_shows_the_parents_manual_minutes(conn):
+    """Ручная надбавка дня приходит из строки выдачи — её пишет исполнитель."""
+    view = service.day_view(conn, 1, DAY)
+    attempt_id = service.start_attempt(conn, child_id=1, assignment_id=view.items[0].assignment_id, at=AT)
+    service.submit(conn, child_id=1, attempt_id=attempt_id, answers=right_answers(conn, attempt_id), at=AT)
+    conn.execute("UPDATE delivery SET manual_minutes = 35 WHERE child_id = 1 AND day = ?", (DAY,))
+    days, _ = service.pilot_summary(conn, 1, since=DAY)
+    assert days[0].manual == 35
+
+
+def test_checklist_is_once_a_day_and_keeps_unchecked_items(conn):
+    assert service.checklist_state(conn, 1, DAY) is None
+    assert service.checklist_items(conn) == list(service.CHECKLIST_DEFAULT)
+    bank.set_setting(conn, service.SETTING_CHECKLIST, "Зубы\n\n Кровать \nПортфель")
+    assert service.checklist_items(conn) == ["Зубы", "Кровать", "Портфель"]
+
+    items = service.complete_checklist(conn, child_id=1, day=DAY, checked=["Зубы", "Портфель", "чужое"], at=AT)
+    assert items == {"Зубы": True, "Кровать": False, "Портфель": True}
+    assert service.checklist_state(conn, 1, DAY) == items
+    # повтор в тот же день заменяет запись, а не добавляет вторую
+    service.complete_checklist(conn, child_id=1, day=DAY, checked=["Кровать"], at=AT)
+    assert conn.execute("SELECT COUNT(*) FROM checklist").fetchone()[0] == 1
+    history = service.checklist_history(conn, 1, since=DAY)
+    assert history[0]["items"]["Кровать"] is True and history[0]["items"]["Зубы"] is False
+
+
+def test_mission_state_exposes_previous_cards_without_answers(conn):
+    """Следующая карточка ссылается на условие предыдущей — его можно перечитать."""
+    import json as _json
+    conn.execute(
+        "INSERT INTO task (id, kind, version, title, payload, reward_minutes, section, active) "
+        "VALUES (77, 'mission', 1, 'Миссия', ?, 10, 'missions', 1)",
+        (_json.dumps({"cards": [
+            {"title": "Вызов", "intro": "У Артёма 3 коробки.", "questions": [{"prompt": "Сколько коробок?", "answer": "3"}]},
+            {"title": "Смысл", "intro": "", "questions": [{"prompt": "А если ещё две?", "answer": "5"}]},
+        ]}),),
+    )
+    conn.execute("INSERT INTO assignment (child_id, task_id, day) VALUES (1, 77, ?)", (DAY,))
+    aid = conn.execute("SELECT id FROM assignment WHERE task_id = 77").fetchone()["id"]
+    attempt_id = service.start_attempt(conn, child_id=1, assignment_id=aid, at=AT)
+    state = service.mission_state(conn, child_id=1, attempt_id=attempt_id)
+    assert state.previous == ()
+    service.submit_card(conn, child_id=1, attempt_id=attempt_id, answers={"1": "3"}, at=AT)
+    state = service.mission_state(conn, child_id=1, attempt_id=attempt_id)
+    assert len(state.previous) == 1
+    prev = state.previous[0]
+    assert prev["intro"] == "У Артёма 3 коробки." and prev["questions"][0]["prompt"] == "Сколько коробок?"
+    assert "3" not in _json.dumps(prev["questions"], ensure_ascii=False).replace("Сколько", "")
+    assert "answer" not in _json.dumps(prev)

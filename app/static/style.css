@@ -638,6 +638,13 @@ a:hover { color: var(--text-primary); }
 .answer-veil { border: var(--stroke-hair) dashed var(--border-default); padding: var(--space-2) var(--space-3); color: var(--text-secondary); font-size: var(--type-secondary-size); cursor: pointer; }
 .answer { color: var(--accent); font-weight: 700; }
 
+/* ---- Чек-лист входа ------------------------------------------------------------- */
+/* Утренний ритуал перед заданиями. Минут не даёт, поэтому без цвета минут. */
+.check { display: flex; align-items: center; gap: var(--space-3); min-height: var(--target-comfort); padding: var(--space-3) var(--space-4); background: var(--surface-panel); border: var(--stroke-hair) solid var(--border-default); color: var(--text-primary); font-weight: 700; cursor: pointer; }
+.check input { width: 24px; height: 24px; margin: 0; flex: 0 0 auto; accent-color: var(--accent); }
+.check:has(input:checked) { border-left: var(--stroke-mark) solid var(--accent); }
+/* ---- Комментарий к оценке ------------------------------------------------------------ */
+textarea.input { min-height: var(--target-comfort); font: 500 16px/1.4 var(--font-core); resize: vertical; }
 /* ---- Пустые состояния и отказы ------------------------------------------------- */
 .empty { border: var(--stroke-hair) dashed var(--border-default); background: var(--surface-panel); padding: var(--space-6) var(--space-4); text-align: center; color: var(--text-secondary); }
 .empty__title { color: var(--text-primary); font-weight: 800; margin-bottom: var(--space-2); }
