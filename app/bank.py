@@ -128,10 +128,12 @@ def quota_for(base: int, earned: int, daily_max: int, gate_open: bool = True,
     наград, и исчезают вместе с отозванной отметкой.
 
     Минуты от родителя (granted) ворот не ждут: это его решение, и оно
-    выполняется сразу. Максимум ограничивает и их.
+    выполняется сразу. Максимум их не ограничивает — он про то, сколько
+    ребёнок может заработать сам, а не про то, сколько родитель может дать.
+    Решение владельца 12.09: потолок откатывал его добавления обратно к 120.
     """
     released = earned if gate_open else 0
-    return max(0, min(daily_max, base + homework_bonus + released + granted))
+    return max(0, min(daily_max, base + homework_bonus + released) + granted)
 
 
 def homework_state(conn: sqlite3.Connection, child_id: int, day: str) -> str | None:
@@ -198,7 +200,7 @@ class Balance:
     def capped(self) -> bool:
         """Упёрлись ли в дневной максимум — сайту это надо показать честно."""
         released = self.earned if self.gate_open else 0
-        return self.base + self.homework_bonus + released + self.granted > self.daily_max
+        return self.base + self.homework_bonus + released > self.daily_max
 
 
 def balance(conn: sqlite3.Connection, child_id: int, day: str) -> Balance:
@@ -325,12 +327,12 @@ def parent_grant(conn: sqlite3.Connection, *, child_id: int, day: str, minutes: 
                  reason: str, at: str) -> Balance:
     """
     Минуты от родителя. Не награда и не аванс: отдельная строка журнала,
-    видна в сводке как «от папы». Кратно 5, от 5 до дневного максимума —
-    случайное «500» не пройдёт.
+    видна в сводке как «от папы». Кратно 5, за раз не больше дневного
+    максимума — случайное «500» не пройдёт; сумма за день не ограничена.
     """
     cap = daily_max_minutes(conn)
     if minutes < 5 or minutes > cap or minutes % 5:
-        raise ValueError(f"Минуты — от 5 до {cap}, кратно 5")
+        raise ValueError(f"Минуты — от 5 до {cap} за раз, кратно 5")
     reason = " ".join(reason.split())[:200]
     with conn:
         conn.execute(

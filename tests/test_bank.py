@@ -475,11 +475,12 @@ def test_parent_grant_enters_the_quota_without_waiting_for_homework(paid):
     assert bank.balance(paid, 1, DAY).target == 15 + 45 + 30 + 20
 
 
-def test_parent_grant_is_capped_by_the_daily_maximum_and_validated(paid):
+def test_parent_grant_goes_above_the_daily_maximum_and_is_validated(paid):
+    """Максимум — про заработанное ребёнком; минуты родителя идут сверх него."""
     bank.parent_grant(paid, child_id=1, day=DAY, minutes=60, reason="", at=AT)
     bank.parent_grant(paid, child_id=1, day=DAY, minutes=60, reason="", at=AT)
     bal = bank.balance(paid, 1, DAY)
-    assert bal.granted == 120 and bal.target == 120 and bal.capped
+    assert bal.granted == 120 and bal.target == 15 + 120 and not bal.capped
     for bad in (0, 3, 7, 125, -5):
         with pytest.raises(ValueError):
             bank.parent_grant(paid, child_id=1, day=DAY, minutes=bad, reason="", at=AT)

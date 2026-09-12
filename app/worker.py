@@ -91,8 +91,7 @@ def handle(conn: sqlite3.Connection, fl: familylink.FamilyLink,
         return
 
     manual = int(row["manual_minutes"] or 0)
-    wanted = delivery.wanted_for(target=row["target_minutes"], base=balance.base,
-                                 manual=manual, daily_max=balance.daily_max)
+    wanted = delivery.wanted_for(target=row["target_minutes"], base=balance.base, manual=manual)
     settled = row["status"] == delivery.CONFIRMED and row["applied_minutes"] == wanted
     if settled:
         # Нечего выдавать. Ручную правку всё же ищем — раз в несколько минут.
@@ -110,7 +109,6 @@ def handle(conn: sqlite3.Connection, fl: familylink.FamilyLink,
         applied=row["applied_minutes"],
         base=balance.base,
         manual=manual,
-        daily_max=balance.daily_max,
     )
     if decision.manual_changed:
         log(f"{child['name']}: РУЧНАЯ ПРАВКА — {decision.reason}")

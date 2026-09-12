@@ -22,9 +22,9 @@ from app import delivery  # noqa: E402
 BASE = 15
 
 
-def d(actual, target, applied=None, base=BASE, manual=0, daily_max=24 * 60):
+def d(actual, target, applied=None, base=BASE, manual=0):
     return delivery.decide(actual=actual, target=target, applied=applied, base=base,
-                           manual=manual, daily_max=daily_max)
+                           manual=manual)
 
 
 # --------------------------------------------------------------------------
@@ -90,12 +90,19 @@ def test_manual_change_after_our_write_is_an_advance_too():
     assert "после нашей записи" in decision.reason
 
 
-def test_daily_maximum_caps_the_advance_as_well():
-    """Руками поставили 200 при максимуме 120 — сервер опускает до 120."""
-    decision = d(actual=200, target=15, daily_max=120)
-    assert decision.action == delivery.WRITE
-    assert decision.wanted == 120
-    assert "понижаем" in decision.reason
+def test_advance_above_the_daily_maximum_is_not_pulled_back():
+    """
+    Родитель поставил 180 при максимуме 120 — сервер не опускает.
+
+    Первая версия правила опускала до 120, родитель ставил снова, и так по
+    кругу (12.09, четыре раза за двадцать минут). Максимум — про заработанное
+    ребёнком, он уже учтён в цели; аванс родителя стоит как поставлен.
+    """
+    decision = d(actual=180, target=120, applied=120)
+    assert decision.action == delivery.CONFIRM
+    assert decision.wanted == 180
+    # и следующая награда не роняет его: цель 120 ниже аванса
+    assert d(actual=180, target=120, applied=180, manual=165).action == delivery.CONFIRM
 
 
 def test_manual_lowering_is_also_respected():

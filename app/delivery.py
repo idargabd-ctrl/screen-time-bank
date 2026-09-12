@@ -21,8 +21,10 @@
 делается через /parent — там он ложится в журнал и входит в цель.
 
 Урезание руками (ручная надбавка отрицательная) уважается буквально: цель
-минус урезанное. Дневной максимум ограничивает всё, что пишет сервер, — и
-цель, и аванс.
+минус урезанное. Дневной максимум аванс не ограничивает: он про то, сколько
+ребёнок зарабатывает сам, и живёт в bank.quota_for. Первая версия правила
+опускала 180 → 120 после каждой ручной правки — родитель добавлял снова, и
+так по кругу; убрано 12.09.
 
 Решение владельца 12.09 после первого живого дня: утренний ручной костыль
 (камера под лимитом) сложился с домашкой в 1 ч 55 мин. Раньше автоматика при
@@ -56,29 +58,29 @@ class Decision:
     manual_changed: bool = False
 
 
-def wanted_for(*, target: int, base: int, manual: int, daily_max: int) -> int:
+def wanted_for(*, target: int, base: int, manual: int) -> int:
     """
     Что должно стоять на планшете.
 
     Ручная надбавка — аванс: max(база + ручное, цель). Урезание — буквально:
-    цель + (отрицательное) ручное. Максимум — потолок для всего.
+    цель + (отрицательное) ручное. Потолка здесь нет: дневной максимум уже
+    учтён в цели, а на аванс он не распространяется.
     """
     if manual >= 0:
         wanted = max(base + manual, target)
     else:
         wanted = target + manual
-    return max(0, min(daily_max, wanted))
+    return max(0, wanted)
 
 
 def decide(*, actual: int | None, target: int, applied: int | None, base: int,
-           manual: int = 0, daily_max: int = 24 * 60) -> Decision:
+           manual: int = 0) -> Decision:
     """
     actual  — что сейчас реально стоит в Family Link, None если не прочиталось
     target  — что мы хотим поставить (посчитано журналом)
     applied — что мы записали в прошлый раз и подтвердили, None если ещё не писали
     base    — базовая квота: единственное значение, которое ожидается в начале дня
     manual  — ручная надбавка, накопленная за день (аванс родителя)
-    daily_max — дневной максимум: сервер никогда не пишет больше
 
     Ожидаемое значение: если мы уже писали — то, что записали; если ещё нет —
     базовая квота из недельного расписания. Расхождение с ожидаемым — чужая
@@ -88,9 +90,9 @@ def decide(*, actual: int | None, target: int, applied: int | None, base: int,
     """
     if actual is None:
         return Decision(UNKNOWN, "не удалось прочитать текущий лимит", manual=manual,
-                        wanted=wanted_for(target=target, base=base, manual=manual, daily_max=daily_max))
+                        wanted=wanted_for(target=target, base=base, manual=manual))
 
-    wanted = wanted_for(target=target, base=base, manual=manual, daily_max=daily_max)
+    wanted = wanted_for(target=target, base=base, manual=manual)
     if actual == wanted:
         return Decision(CONFIRM, f"на устройстве уже {actual} мин", manual=manual, wanted=wanted)
 
@@ -102,7 +104,7 @@ def decide(*, actual: int | None, target: int, applied: int | None, base: int,
         # Подняли — аванс равен тому, что стоит на устройстве (сверх базы).
         # Урезали — разница накапливается и вычитается из цели буквально.
         manual = (actual - base) if delta > 0 else manual + delta
-        wanted = wanted_for(target=target, base=base, manual=manual, daily_max=daily_max)
+        wanted = wanted_for(target=target, base=base, manual=manual)
         who = "после нашей записи" if applied is not None else "до первой записи за день"
         sign = "+" if delta > 0 else "−"
         note = (f"лимит изменён вручную {who}: ожидали {expected}, на устройстве {actual}, "
