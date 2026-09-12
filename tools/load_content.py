@@ -106,7 +106,7 @@ def load_file(conn, path: Path, dry_run: bool) -> tuple[int, int, list[str]]:
     for task in items:
         payload_text = json.dumps(task.get("payload") or {}, ensure_ascii=False, sort_keys=True)
         existing = conn.execute(
-            "SELECT id, version, payload, title, video_file, section FROM task WHERE slug = ?", (task["slug"],)
+            "SELECT id, version, payload, title, video_file, section, reward_minutes FROM task WHERE slug = ?", (task["slug"],)
         ).fetchone()
 
         if existing is None:
@@ -140,6 +140,10 @@ def load_file(conn, path: Path, dry_run: bool) -> tuple[int, int, list[str]]:
             )
             continue
 
+        # Награду тоже можно менять без поднятия версии: вопросы те же, а
+        # цена — решение родителя, не содержание.
+        reward_changed = int(existing["reward_minutes"]) != int(task["reward_minutes"])
+
         if not changed and new_version == existing["version"]:
             if video_changed:
                 say(f"  ~ {task['slug']}  привязан ролик")
@@ -147,6 +151,12 @@ def load_file(conn, path: Path, dry_run: bool) -> tuple[int, int, list[str]]:
                     conn.execute("UPDATE task SET video_file = ?, section = ? WHERE slug = ?",
                                  (task.get("video_file", ""),
                                   task.get("section", section), task["slug"]))
+                updated += 1
+            if reward_changed:
+                say(f"  ~ {task['slug']}  награда {existing['reward_minutes']} -> {task['reward_minutes']}")
+                if not dry_run:
+                    conn.execute("UPDATE task SET reward_minutes = ? WHERE slug = ?",
+                                 (int(task["reward_minutes"]), task["slug"]))
                 updated += 1
             continue
 
