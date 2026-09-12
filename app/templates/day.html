@@ -207,6 +207,15 @@
   </div>
 {% endif %}
 
+{% set english = view.by_section("english") %}
+{% if english %}
+  <div>
+    <h2>Английский</h2>
+    <p class="muted t-secondary">Пять слов: запомни, узнай, напиши. Подсказки бесплатны.</p>
+    {{ task_list(english) }}
+  </div>
+{% endif %}
+
 {% set extra = view.by_section("extra") %}
 {% if extra %}
   <div>

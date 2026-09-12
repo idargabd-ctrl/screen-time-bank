@@ -76,8 +76,10 @@ def test_right_answers_pass_and_wrong_ones_do_not(task):
     questions = tasks.generate(task["kind"], task["payload"], seed=1)
     ratio = float(task["payload"].get("pass_ratio", tasks.DEFAULT_PASS_RATIO))
 
-    right = {str(i): q.answer for i, q in enumerate(questions, start=1)}
-    assert tasks.judge(questions, right, ratio).passed is True
+    # Ответ может перечислять варианты через «|» — годится любой из них.
+    for pick in (0, -1):
+        right = {str(i): q.answer.split("|")[pick] for i, q in enumerate(questions, start=1)}
+        assert tasks.judge(questions, right, ratio).passed is True
 
     assert tasks.judge(questions, {}, ratio).passed is False, "пустая форма не должна проходить"
 
@@ -139,6 +141,16 @@ EXPECTED = {
     "mission-ch1c-poslednyaya-batareyka": ["1", "2", "3", "1", "1"],
     "mission-a1b-chess-club": ["2", "5", "2", "2", "1"],
     "mission-a1c-music-club": ["3", "3", "1", "1", "14"],
+
+    # Уроки английского (tools/make_english.py): переписать первое слово,
+    # узнать по-русски (варианты через «|»), со второй недели — написать.
+    "eng-01-family": ["mother", "мама|мать", "папа|отец", "сестра", "брат", "семья"],
+    "eng-02-looks": ["tall", "высокий", "низкий|короткий|невысокий", "стройный|худой", "смешной|весёлый|забавный", "добрый"],
+    "eng-03-jobs": ["baker", "пекарь", "официант", "медсестра", "механик", "почтальон"],
+    "eng-04-review-1": ["family", "семья", "брат", "добрый", "высокий", "медсестра", "пекарь", "смешной|весёлый|забавный"],
+    "eng-05-places": ["bakery", "пекарня|булочная", "гараж|автомастерская", "почта|почтовое отделение", "кафе", "больница", "официант", "сестра", "bakery", "garage", "waiter"],
+    "eng-06-food": ["tomato", "помидор|томат", "картошка|картофель|картофелина", "лимон", "масло|сливочное масло", "сахар", "пекарь", "высокий", "tomato", "potato", "baker"],
+    "eng-07-zoo": ["giraffe", "жираф", "обезьяна|обезьянка", "дельфин", "крокодил", "слон", "картошка|картофель|картофелина", "больница", "giraffe", "monkey", "potato"],
 
     # Целые варианты 2025: ответы по номерам, прочитаны с кадров роликов и
     # пересчитаны. Порядок — как в ролике.
@@ -519,8 +531,8 @@ def test_full_variant_figures_add_up():
 
 
 def _is_mission(slug: str) -> bool:
-    """Миссии — авторские задания методики, официального ключа у них нет."""
-    return slug.startswith("mission-")
+    """Миссии и уроки слов — авторские задания, официального ключа у них нет."""
+    return slug.startswith("mission-") or slug.startswith("eng-")
 
 
 def test_every_task_is_either_checked_or_explicitly_exempt():

@@ -175,6 +175,39 @@ def load_file(conn, path: Path, dry_run: bool) -> tuple[int, int, list[str]]:
     return added, updated, problems
 
 
+def load_schedule(conn, path: Path, dry_run: bool) -> tuple[int, list[str]]:
+    """
+    content/schedule.json → таблица plan. Формат: {"2026-09-14": {"missions":
+    ["slug", ...], "vpr": [...], "english": [...]}, ...}. План на день
+    заменяется целиком: убрал из файла — убралось из базы.
+    """
+    data = json.loads(path.read_text(encoding="utf-8"))
+    problems: list[str] = []
+    known = {r["slug"] for r in conn.execute("SELECT slug FROM task")}
+    rows = []
+    for day, sections in data.items():
+        if day.startswith("_"):
+            continue
+        for section, slugs in sections.items():
+            for position, slug in enumerate(slugs):
+                if slug not in known:
+                    # Не ошибка: план пишется вперёд, задание может прийти
+                    # позже черновиком. До тех пор день соберёт ротация.
+                    say(f"  ! {day} {section}: «{slug}» пока нет в каталоге")
+                rows.append((day, section, slug, position))
+    if not dry_run:
+        with conn:
+            days = sorted({d for d in data if not d.startswith("_")})
+            for day in days:
+                conn.execute("DELETE FROM plan WHERE day = ?", (day,))
+            conn.executemany(
+                "INSERT INTO plan (day, section, slug, position) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT (day, slug) DO UPDATE SET section = excluded.section, position = excluded.position",
+                rows,
+            )
+    return len(rows), problems
+
+
 def skill_of(task: dict) -> str:
     """Навык: явное поле задания, иначе skill из payload миссии, иначе пусто."""
     return str(task.get("skill") or (task.get("payload") or {}).get("skill") or "").strip()
@@ -225,7 +258,8 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="только показать изменения")
     args = parser.parse_args()
 
-    files = [Path(args.file)] if args.file else sorted(CONTENT_DIR.glob("*.json"))
+    files = [Path(args.file)] if args.file else sorted(
+        p for p in CONTENT_DIR.glob("*.json") if p.name != "schedule.json")
     if not files:
         fail(f"Не найдено ни одного файла в {CONTENT_DIR}")
 
@@ -250,6 +284,13 @@ def main() -> int:
         all_problems.extend(problems)
         if not added and not updated and not problems:
             say("  без изменений")
+        say("")
+
+    schedule = CONTENT_DIR / "schedule.json"
+    if not args.file and schedule.exists():
+        n, problems = load_schedule(conn, schedule, args.dry_run)
+        say(f"{schedule.name}: {n} строк плана")
+        all_problems.extend(problems)
         say("")
 
     if all_problems:

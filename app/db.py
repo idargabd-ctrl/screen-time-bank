@@ -157,6 +157,18 @@ CREATE TABLE IF NOT EXISTS parent_grant (
     created_at TEXT    NOT NULL
 );
 
+-- План на день: что назначить вместо ротации. Загружается из
+-- content/schedule.json (tools/load_content.py). Строка ссылается на slug, а
+-- не на id: файл пишется руками до того, как задание попало в базу.
+CREATE TABLE IF NOT EXISTS plan (
+    id       INTEGER PRIMARY KEY,
+    day      TEXT    NOT NULL,
+    section  TEXT    NOT NULL,
+    slug     TEXT    NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (day, slug)
+);
+
 -- Журнал наград. UNIQUE — это и есть идемпотентность: две вкладки, повторная
 -- отправка и перезапуск сервера не создадут вторую награду за то же задание.
 CREATE TABLE IF NOT EXISTS reward (

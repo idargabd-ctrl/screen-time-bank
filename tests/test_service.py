@@ -431,3 +431,46 @@ def test_extra_picks_the_least_recently_seen_task(conn):
     aid = service.request_extra(conn, child_id=1, day=DAY)
     task_id = conn.execute("SELECT task_id FROM assignment WHERE id = ?", (aid,)).fetchone()["task_id"]
     assert task_id == 51, "никогда не виденное — первым"
+
+
+# --------------------------------------------------------------------------
+# План поверх ротации и английский через день
+# --------------------------------------------------------------------------
+
+
+def test_english_every_other_day_from_the_anchor():
+    assert service.english_day("2026-09-14") and service.english_day("2026-09-16")
+    assert not service.english_day("2026-09-15") and not service.english_day("2026-09-27")
+    on = service.limits_for("2026-09-14"); off = service.limits_for("2026-09-15")
+    assert (on[service.ENGLISH], on[service.VPR]) == (1, 2)
+    assert (off[service.ENGLISH], off[service.VPR]) == (0, 3)
+    assert on[service.MISSIONS] == off[service.MISSIONS] == 2
+
+
+def test_plan_wins_over_rotation_and_skips_drafts(conn):
+    for tid, slug, active in ((60, "plan-a", 1), (61, "plan-b", 1), (62, "plan-draft", 0)):
+        conn.execute(
+            "INSERT INTO task (id, slug, kind, version, title, payload, reward_minutes, section, active, status) "
+            "VALUES (?, ?, 'math', 1, ?, ?, 10, 'vpr', ?, ?)",
+            (tid, slug, slug, json.dumps({"count": 2, "ops": ["+"], "max": 9}), active,
+             "active" if active else "draft"),
+        )
+    conn.execute("INSERT INTO plan (day, section, slug, position) VALUES (?, 'vpr', 'plan-b', 0)", (DAY,))
+    conn.execute("INSERT INTO plan (day, section, slug, position) VALUES (?, 'vpr', 'plan-draft', 1)", (DAY,))
+    view = service.day_view(conn, 1, DAY)
+    vpr = [i.task_id for i in view.by_section(service.VPR)]
+    assert 61 in vpr and 62 not in vpr, "план назначен; черновик из плана — нет"
+    assert len(vpr) == service.limits_for(DAY)[service.VPR], "до нормы дня добирает ротация"
+    # день без плана — ротация как раньше
+    other = service.day_view(conn, 1, "2026-09-30")
+    assert other.by_section(service.VPR), "без плана раздел собирает ротация"
+
+
+def test_planned_days_marks_drafts_and_missing(conn):
+    conn.execute("INSERT INTO task (id, slug, kind, version, title, payload, reward_minutes, section, active, status) "
+                 "VALUES (70, 'p-draft', 'math', 1, 'Черновик', '{}', 10, 'missions', 0, 'draft')")
+    conn.execute("INSERT INTO plan (day, section, slug) VALUES ('2026-10-01', 'missions', 'p-draft')")
+    conn.execute("INSERT INTO plan (day, section, slug) VALUES ('2026-10-01', 'vpr', 'nope')")
+    days = service.planned_days(conn, since="2026-10-01", until="2026-10-07")
+    assert days[0]["sections"]["missions"] == ["Черновик — черновик"]
+    assert "нет в каталоге" in days[0]["sections"]["vpr"][0]

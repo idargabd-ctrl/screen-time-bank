@@ -369,7 +369,9 @@ def parent_page(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
     grants = conn.execute("SELECT day, minutes, reason, created_at FROM parent_grant "
                           " WHERE child_id = ? AND day >= ? ORDER BY id DESC",
                           (child["id"], since)).fetchall() if child else []
-    return render(request, "parent.html", rows=rows, today=today(), drafts=drafts,
+    until = (date.fromisoformat(today()) + timedelta(days=7)).isoformat()
+    plan = service.planned_days(conn, since=today(), until=until)
+    return render(request, "parent.html", rows=rows, today=today(), drafts=drafts, plan=plan,
                   pilot_days=pilot_days, pilot_items=pilot_items[:30], checklists=checklists,
                   manual_total=sum(d.manual for d in pilot_days), balance=balance,
                   delivery_row=delivery_row, grants=grants, child_id=child["id"] if child else 0)

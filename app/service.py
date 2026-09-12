@@ -238,6 +238,7 @@ def homework_policy(day: str) -> HomeworkPolicy:
 
 VPR = "vpr"
 MISSIONS = "missions"
+ENGLISH = "english"      # урок слов: через день вместо третьего разбора ВПР
 EXTRA = "extra"          # сложные задания по просьбе, см. request_extra
 
 # Сколько заданий каждого раздела назначается на день.
@@ -249,9 +250,27 @@ EXTRA = "extra"          # сложные задания по просьбе, с
 # большинство из них уже ничего не стоят — а ребёнок этого не видит.
 PER_DAY = {
     MISSIONS: 2,   # ежедневная практика способа
-    VPR: 3,        # подготовка к работе; за шесть дней обойдёт все 18
+    VPR: 3,        # подготовка к работе; в день английского — 2
+    ENGLISH: 0,    # через день — см. limits_for
     EXTRA: 0,      # сложные задания: сами не назначаются, только по просьбе
 }
+
+# Английский — через день, начиная с 14.09.2026 (решение владельца): в такой
+# день урок слов занимает место третьего разбора ВПР, сумма дня не меняется.
+ENGLISH_ANCHOR = date(2026, 9, 14)
+
+
+def english_day(day: str) -> bool:
+    return (date.fromisoformat(day) - ENGLISH_ANCHOR).days % 2 == 0
+
+
+def limits_for(day: str) -> dict[str, int]:
+    """Сколько заданий каждого раздела в этот день."""
+    limits = dict(PER_DAY)
+    if english_day(day):
+        limits[ENGLISH] = 1
+        limits[VPR] = PER_DAY[VPR] - 1
+    return limits
 
 # «Хочу ещё минут». Когда все пять заданий дня зачтены, сын может попросить
 # сложное задание — из раздела extra, за 25 минут. Не больше трёх в день:
@@ -369,9 +388,47 @@ def request_extra(conn: sqlite3.Connection, *, child_id: int, day: str) -> int:
     return assignment_id
 
 
+def _assign_planned(conn: sqlite3.Connection, child_id: int, day: str, section: str) -> int:
+    """
+    Назначает то, что стоит в плане на день (таблица plan, из
+    content/schedule.json). Возвращает число назначенных. Неактивное в плане
+    — например, черновик, который родитель ещё не утвердил, — пропускается.
+    """
+    rows = conn.execute(
+        "SELECT t.id FROM plan p JOIN task t ON t.slug = p.slug "
+        " WHERE p.day = ? AND p.section = ? AND t.active = 1 ORDER BY p.position, p.id",
+        (day, section),
+    ).fetchall()
+    with conn:
+        for r in rows:
+            conn.execute(
+                "INSERT INTO assignment (child_id, task_id, day) VALUES (?, ?, ?) "
+                "ON CONFLICT (child_id, task_id, day) DO NOTHING",
+                (child_id, r["id"], day),
+            )
+    return len(rows)
+
+
+def planned_days(conn: sqlite3.Connection, *, since: str, until: str) -> list[dict]:
+    """План по дням для страницы родителя: день → раздел → названия."""
+    out: dict[str, dict[str, list[str]]] = {}
+    for r in conn.execute(
+        "SELECT p.day, p.section, p.slug, t.title, t.active FROM plan p LEFT JOIN task t ON t.slug = p.slug "
+        " WHERE p.day BETWEEN ? AND ? ORDER BY p.day, p.section, p.position, p.id", (since, until)):
+        title = r["title"] or f"{r['slug']} (нет в каталоге)"
+        if r["title"] and not r["active"]:
+            title += " — черновик"
+        out.setdefault(r["day"], {}).setdefault(r["section"], []).append(title)
+    return [{"day": d, "sections": s} for d, s in out.items()]
+
+
 def ensure_day(conn: sqlite3.Connection, child_id: int, day: str) -> None:
     """
     Собирает день: по нескольку заданий из каждого раздела.
+
+    Сначала план (content/schedule.json): что там стоит на день — назначается.
+    До нормы дня добирает ротация: так неутверждённый черновик в плане не
+    оставляет дырку, а после конца расписания всё собирается само.
 
     Разделы живут отдельно сознательно. Миссии — ежедневная практика способа,
     разборы ВПР — подготовка к конкретной работе. Смешать их в один список
@@ -383,9 +440,13 @@ def ensure_day(conn: sqlite3.Connection, child_id: int, day: str) -> None:
     sections = [r["section"] for r in conn.execute(
         "SELECT DISTINCT section FROM task WHERE active = 1"
     ).fetchall()]
+    limits = limits_for(day)
 
     for section in sections:
-        limit = PER_DAY.get(section)
+        # План — первым; чего в нём не хватило до нормы дня (черновик не
+        # утверждён, задание ещё не написано) — добирает ротация.
+        _assign_planned(conn, child_id, day, section)
+        limit = limits.get(section)
         if limit is None:
             with conn:
                 conn.execute(

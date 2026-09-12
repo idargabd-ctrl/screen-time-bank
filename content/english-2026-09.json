@@ -1,0 +1,518 @@
+{
+ "_comment": [
+  "Уроки английского на 14–27 сентября 2026, через день. Сгенерировано",
+  "tools/make_english.py — править слова там, а не здесь.",
+  "Слова из Spotlight 3 и Spotlight 4 (часть 1, модули 1–4)."
+ ],
+ "subject": "Английский язык, 4 класс",
+ "source": "Spotlight 3–4 (Быкова), словарь модулей",
+ "section": "english",
+ "status": "draft",
+ "tasks": [
+  {
+   "slug": "eng-01-family",
+   "kind": "mission",
+   "version": 1,
+   "title": "Английский: семья",
+   "section": "english",
+   "reward_minutes": 10,
+   "payload": {
+    "skill": "Английский: слова — семья",
+    "cards": [
+     {
+      "title": "Запомни",
+      "intro": "Слова на сегодня: mother — мама; father — папа; sister — сестра; brother — брат; family — семья. Прочитай фразы: My mother is kind. — Моя мама добрая. My father is tall. — Мой папа высокий. I have a little sister. — У меня есть младшая сестра. My brother likes Roblox. — Мой брат любит Roblox. One big happy family. — Одна большая счастливая семья.",
+      "questions": [
+       {
+        "prompt": "Перепиши по-английски первое слово из списка (оно означает «мама»).",
+        "answer": "mother",
+        "hint": "Смотри в список выше: первое слово, буква в букву."
+       }
+      ]
+     },
+     {
+      "title": "Узнай",
+      "intro": "Напиши по-русски, что значит слово. Подойдёт любое верное значение.",
+      "pass_ratio": 0.8,
+      "questions": [
+       {
+        "prompt": "mother — ?",
+        "answer": "мама|мать",
+        "hint": "My mother is kind. — вспомни эту фразу."
+       },
+       {
+        "prompt": "father — ?",
+        "answer": "папа|отец",
+        "hint": "My father is tall. — вспомни эту фразу."
+       },
+       {
+        "prompt": "sister — ?",
+        "answer": "сестра",
+        "hint": "I have a little sister. — вспомни эту фразу."
+       },
+       {
+        "prompt": "brother — ?",
+        "answer": "брат",
+        "hint": "My brother likes Roblox. — вспомни эту фразу."
+       },
+       {
+        "prompt": "family — ?",
+        "answer": "семья",
+        "hint": "One big happy family. — вспомни эту фразу."
+       }
+      ]
+     }
+    ],
+    "feedback": "Ты узнал слова по фразам, а не зубрил список — так они и остаются в голове."
+   }
+  },
+  {
+   "slug": "eng-02-looks",
+   "kind": "mission",
+   "version": 1,
+   "title": "Английский: какой человек",
+   "section": "english",
+   "reward_minutes": 10,
+   "payload": {
+    "skill": "Английский: слова — какой человек",
+    "cards": [
+     {
+      "title": "Запомни",
+      "intro": "Слова на сегодня: tall — высокий; short — низкий; slim — стройный; funny — смешной; kind — добрый. Прочитай фразы: Tom is tall. — Том высокий. Ann is short. — Аня невысокая. She is slim. — Она стройная. He is very funny. — Он очень смешной. A kind teacher. — Добрый учитель.",
+      "questions": [
+       {
+        "prompt": "Перепиши по-английски первое слово из списка (оно означает «высокий»).",
+        "answer": "tall",
+        "hint": "Смотри в список выше: первое слово, буква в букву."
+       }
+      ]
+     },
+     {
+      "title": "Узнай",
+      "intro": "Напиши по-русски, что значит слово. Подойдёт любое верное значение.",
+      "pass_ratio": 0.8,
+      "questions": [
+       {
+        "prompt": "tall — ?",
+        "answer": "высокий",
+        "hint": "Tom is tall. — вспомни эту фразу."
+       },
+       {
+        "prompt": "short — ?",
+        "answer": "низкий|короткий|невысокий",
+        "hint": "Ann is short. — вспомни эту фразу."
+       },
+       {
+        "prompt": "slim — ?",
+        "answer": "стройный|худой",
+        "hint": "She is slim. — вспомни эту фразу."
+       },
+       {
+        "prompt": "funny — ?",
+        "answer": "смешной|весёлый|забавный",
+        "hint": "He is very funny. — вспомни эту фразу."
+       },
+       {
+        "prompt": "kind — ?",
+        "answer": "добрый",
+        "hint": "A kind teacher. — вспомни эту фразу."
+       }
+      ]
+     }
+    ],
+    "feedback": "Ты узнал слова по фразам, а не зубрил список — так они и остаются в голове."
+   }
+  },
+  {
+   "slug": "eng-03-jobs",
+   "kind": "mission",
+   "version": 1,
+   "title": "Английский: профессии",
+   "section": "english",
+   "reward_minutes": 10,
+   "payload": {
+    "skill": "Английский: слова — профессии",
+    "cards": [
+     {
+      "title": "Запомни",
+      "intro": "Слова на сегодня: baker — пекарь; waiter — официант; nurse — медсестра; mechanic — механик; postman — почтальон. Прочитай фразы: A baker makes bread. — Пекарь печёт хлеб. The waiter brings pizza. — Официант приносит пиццу. A nurse works in a hospital. — Медсестра работает в больнице. A mechanic fixes cars. — Механик чинит машины. The postman brings letters. — Почтальон приносит письма.",
+      "questions": [
+       {
+        "prompt": "Перепиши по-английски первое слово из списка (оно означает «пекарь»).",
+        "answer": "baker",
+        "hint": "Смотри в список выше: первое слово, буква в букву."
+       }
+      ]
+     },
+     {
+      "title": "Узнай",
+      "intro": "Напиши по-русски, что значит слово. Подойдёт любое верное значение.",
+      "pass_ratio": 0.8,
+      "questions": [
+       {
+        "prompt": "baker — ?",
+        "answer": "пекарь",
+        "hint": "A baker makes bread. — вспомни эту фразу."
+       },
+       {
+        "prompt": "waiter — ?",
+        "answer": "официант",
+        "hint": "The waiter brings pizza. — вспомни эту фразу."
+       },
+       {
+        "prompt": "nurse — ?",
+        "answer": "медсестра",
+        "hint": "A nurse works in a hospital. — вспомни эту фразу."
+       },
+       {
+        "prompt": "mechanic — ?",
+        "answer": "механик",
+        "hint": "A mechanic fixes cars. — вспомни эту фразу."
+       },
+       {
+        "prompt": "postman — ?",
+        "answer": "почтальон",
+        "hint": "The postman brings letters. — вспомни эту фразу."
+       }
+      ]
+     }
+    ],
+    "feedback": "Ты узнал слова по фразам, а не зубрил список — так они и остаются в голове."
+   }
+  },
+  {
+   "slug": "eng-04-review-1",
+   "kind": "mission",
+   "version": 1,
+   "title": "Английский: повторение недели",
+   "section": "english",
+   "reward_minutes": 10,
+   "payload": {
+    "skill": "Английский: слова — повторение недели",
+    "cards": [
+     {
+      "title": "Вспомни",
+      "intro": "Слова на сегодня: family — семья; brother — брат; kind — добрый; tall — высокий; nurse — медсестра; baker — пекарь; funny — смешной. Прочитай фразы: One big happy family. — Одна большая счастливая семья. My brother likes Roblox. — Мой брат любит Roblox. A kind teacher. — Добрый учитель. Tom is tall. — Том высокий. A nurse works in a hospital. — Медсестра работает в больнице. A baker makes bread. — Пекарь печёт хлеб. He is very funny. — Он очень смешной.",
+      "questions": [
+       {
+        "prompt": "Перепиши по-английски первое слово из списка (оно означает «семья»).",
+        "answer": "family",
+        "hint": "Смотри в список выше: первое слово, буква в букву."
+       }
+      ]
+     },
+     {
+      "title": "Узнай",
+      "intro": "Напиши по-русски, что значит слово. Подойдёт любое верное значение.",
+      "pass_ratio": 0.8,
+      "questions": [
+       {
+        "prompt": "family — ?",
+        "answer": "семья",
+        "hint": "One big happy family. — вспомни эту фразу."
+       },
+       {
+        "prompt": "brother — ?",
+        "answer": "брат",
+        "hint": "My brother likes Roblox. — вспомни эту фразу."
+       },
+       {
+        "prompt": "kind — ?",
+        "answer": "добрый",
+        "hint": "A kind teacher. — вспомни эту фразу."
+       },
+       {
+        "prompt": "tall — ?",
+        "answer": "высокий",
+        "hint": "Tom is tall. — вспомни эту фразу."
+       },
+       {
+        "prompt": "nurse — ?",
+        "answer": "медсестра",
+        "hint": "A nurse works in a hospital. — вспомни эту фразу."
+       },
+       {
+        "prompt": "baker — ?",
+        "answer": "пекарь",
+        "hint": "A baker makes bread. — вспомни эту фразу."
+       },
+       {
+        "prompt": "funny — ?",
+        "answer": "смешной|весёлый|забавный",
+        "hint": "He is very funny. — вспомни эту фразу."
+       }
+      ]
+     }
+    ],
+    "feedback": "Ты узнал слова по фразам, а не зубрил список — так они и остаются в голове."
+   }
+  },
+  {
+   "slug": "eng-05-places",
+   "kind": "mission",
+   "version": 1,
+   "title": "Английский: где работают",
+   "section": "english",
+   "reward_minutes": 10,
+   "payload": {
+    "skill": "Английский: слова — где работают",
+    "cards": [
+     {
+      "title": "Запомни",
+      "intro": "Слова на сегодня: bakery — пекарня; garage — гараж; post office — почта; cafe — кафе; hospital — больница; waiter — официант; sister — сестра. Новые — первые пять, дальше повторение. Прочитай фразы: Bread is from the bakery. — Хлеб из пекарни. The car is in the garage. — Машина в гараже. Letters go to the post office. — Письма несут на почту. We eat in a cafe. — Мы едим в кафе. The nurse is at the hospital. — Медсестра в больнице. The waiter brings pizza. — Официант приносит пиццу. I have a little sister. — У меня есть младшая сестра.",
+      "questions": [
+       {
+        "prompt": "Перепиши по-английски первое слово из списка (оно означает «пекарня»).",
+        "answer": "bakery",
+        "hint": "Смотри в список выше: первое слово, буква в букву."
+       }
+      ]
+     },
+     {
+      "title": "Узнай",
+      "intro": "Напиши по-русски, что значит слово. Подойдёт любое верное значение.",
+      "pass_ratio": 0.8,
+      "questions": [
+       {
+        "prompt": "bakery — ?",
+        "answer": "пекарня|булочная",
+        "hint": "Bread is from the bakery. — вспомни эту фразу."
+       },
+       {
+        "prompt": "garage — ?",
+        "answer": "гараж|автомастерская",
+        "hint": "The car is in the garage. — вспомни эту фразу."
+       },
+       {
+        "prompt": "post office — ?",
+        "answer": "почта|почтовое отделение",
+        "hint": "Letters go to the post office. — вспомни эту фразу."
+       },
+       {
+        "prompt": "cafe — ?",
+        "answer": "кафе",
+        "hint": "We eat in a cafe. — вспомни эту фразу."
+       },
+       {
+        "prompt": "hospital — ?",
+        "answer": "больница",
+        "hint": "The nurse is at the hospital. — вспомни эту фразу."
+       },
+       {
+        "prompt": "waiter — ?",
+        "answer": "официант",
+        "hint": "The waiter brings pizza. — вспомни эту фразу."
+       },
+       {
+        "prompt": "sister — ?",
+        "answer": "сестра",
+        "hint": "I have a little sister. — вспомни эту фразу."
+       }
+      ]
+     },
+     {
+      "title": "Напиши",
+      "intro": "Теперь наоборот: напиши слово по-английски. Ошибка в букве — не сошлось, но подсказка покажет начало.",
+      "pass_ratio": 0.67,
+      "questions": [
+       {
+        "prompt": "пекарня — ? (по-английски)",
+        "answer": "bakery",
+        "hint": "Начинается так: b _ _ _ _ _"
+       },
+       {
+        "prompt": "гараж — ? (по-английски)",
+        "answer": "garage",
+        "hint": "Начинается так: g _ _ _ _ _"
+       },
+       {
+        "prompt": "официант — ? (по-английски)",
+        "answer": "waiter",
+        "hint": "Начинается так: w _ _ _ _ _"
+       }
+      ]
+     }
+    ],
+    "feedback": "Ты узнал слова по фразам, а не зубрил список — так они и остаются в голове."
+   }
+  },
+  {
+   "slug": "eng-06-food",
+   "kind": "mission",
+   "version": 1,
+   "title": "Английский: еда",
+   "section": "english",
+   "reward_minutes": 10,
+   "payload": {
+    "skill": "Английский: слова — еда",
+    "cards": [
+     {
+      "title": "Запомни",
+      "intro": "Слова на сегодня: tomato — помидор; potato — картошка; lemon — лимон; butter — масло; sugar — сахар; baker — пекарь; tall — высокий. Новые — первые пять, дальше повторение. Прочитай фразы: A red tomato. — Красный помидор. I like potatoes. — Я люблю картошку. A yellow lemon. — Жёлтый лимон. Bread and butter. — Хлеб с маслом. Tea with sugar. — Чай с сахаром. A baker makes bread. — Пекарь печёт хлеб. Tom is tall. — Том высокий.",
+      "questions": [
+       {
+        "prompt": "Перепиши по-английски первое слово из списка (оно означает «помидор»).",
+        "answer": "tomato",
+        "hint": "Смотри в список выше: первое слово, буква в букву."
+       }
+      ]
+     },
+     {
+      "title": "Узнай",
+      "intro": "Напиши по-русски, что значит слово. Подойдёт любое верное значение.",
+      "pass_ratio": 0.8,
+      "questions": [
+       {
+        "prompt": "tomato — ?",
+        "answer": "помидор|томат",
+        "hint": "A red tomato. — вспомни эту фразу."
+       },
+       {
+        "prompt": "potato — ?",
+        "answer": "картошка|картофель|картофелина",
+        "hint": "I like potatoes. — вспомни эту фразу."
+       },
+       {
+        "prompt": "lemon — ?",
+        "answer": "лимон",
+        "hint": "A yellow lemon. — вспомни эту фразу."
+       },
+       {
+        "prompt": "butter — ?",
+        "answer": "масло|сливочное масло",
+        "hint": "Bread and butter. — вспомни эту фразу."
+       },
+       {
+        "prompt": "sugar — ?",
+        "answer": "сахар",
+        "hint": "Tea with sugar. — вспомни эту фразу."
+       },
+       {
+        "prompt": "baker — ?",
+        "answer": "пекарь",
+        "hint": "A baker makes bread. — вспомни эту фразу."
+       },
+       {
+        "prompt": "tall — ?",
+        "answer": "высокий",
+        "hint": "Tom is tall. — вспомни эту фразу."
+       }
+      ]
+     },
+     {
+      "title": "Напиши",
+      "intro": "Теперь наоборот: напиши слово по-английски. Ошибка в букве — не сошлось, но подсказка покажет начало.",
+      "pass_ratio": 0.67,
+      "questions": [
+       {
+        "prompt": "помидор — ? (по-английски)",
+        "answer": "tomato",
+        "hint": "Начинается так: t _ _ _ _ _"
+       },
+       {
+        "prompt": "картошка — ? (по-английски)",
+        "answer": "potato",
+        "hint": "Начинается так: p _ _ _ _ _"
+       },
+       {
+        "prompt": "пекарь — ? (по-английски)",
+        "answer": "baker",
+        "hint": "Начинается так: b _ _ _ _"
+       }
+      ]
+     }
+    ],
+    "feedback": "Ты узнал слова по фразам, а не зубрил список — так они и остаются в голове."
+   }
+  },
+  {
+   "slug": "eng-07-zoo",
+   "kind": "mission",
+   "version": 1,
+   "title": "Английский: в зоопарке",
+   "section": "english",
+   "reward_minutes": 10,
+   "payload": {
+    "skill": "Английский: слова — в зоопарке",
+    "cards": [
+     {
+      "title": "Запомни",
+      "intro": "Слова на сегодня: giraffe — жираф; monkey — обезьяна; dolphin — дельфин; crocodile — крокодил; elephant — слон; potato — картошка; hospital — больница. Новые — первые пять, дальше повторение. Прочитай фразы: A giraffe is very tall. — Жираф очень высокий. A funny monkey. — Смешная обезьяна. Dolphins swim fast. — Дельфины быстро плавают. A big green crocodile. — Большой зелёный крокодил. An elephant is big. — Слон большой. I like potatoes. — Я люблю картошку. The nurse is at the hospital. — Медсестра в больнице.",
+      "questions": [
+       {
+        "prompt": "Перепиши по-английски первое слово из списка (оно означает «жираф»).",
+        "answer": "giraffe",
+        "hint": "Смотри в список выше: первое слово, буква в букву."
+       }
+      ]
+     },
+     {
+      "title": "Узнай",
+      "intro": "Напиши по-русски, что значит слово. Подойдёт любое верное значение.",
+      "pass_ratio": 0.8,
+      "questions": [
+       {
+        "prompt": "giraffe — ?",
+        "answer": "жираф",
+        "hint": "A giraffe is very tall. — вспомни эту фразу."
+       },
+       {
+        "prompt": "monkey — ?",
+        "answer": "обезьяна|обезьянка",
+        "hint": "A funny monkey. — вспомни эту фразу."
+       },
+       {
+        "prompt": "dolphin — ?",
+        "answer": "дельфин",
+        "hint": "Dolphins swim fast. — вспомни эту фразу."
+       },
+       {
+        "prompt": "crocodile — ?",
+        "answer": "крокодил",
+        "hint": "A big green crocodile. — вспомни эту фразу."
+       },
+       {
+        "prompt": "elephant — ?",
+        "answer": "слон",
+        "hint": "An elephant is big. — вспомни эту фразу."
+       },
+       {
+        "prompt": "potato — ?",
+        "answer": "картошка|картофель|картофелина",
+        "hint": "I like potatoes. — вспомни эту фразу."
+       },
+       {
+        "prompt": "hospital — ?",
+        "answer": "больница",
+        "hint": "The nurse is at the hospital. — вспомни эту фразу."
+       }
+      ]
+     },
+     {
+      "title": "Напиши",
+      "intro": "Теперь наоборот: напиши слово по-английски. Ошибка в букве — не сошлось, но подсказка покажет начало.",
+      "pass_ratio": 0.67,
+      "questions": [
+       {
+        "prompt": "жираф — ? (по-английски)",
+        "answer": "giraffe",
+        "hint": "Начинается так: g _ _ _ _ _ _"
+       },
+       {
+        "prompt": "обезьяна — ? (по-английски)",
+        "answer": "monkey",
+        "hint": "Начинается так: m _ _ _ _ _"
+       },
+       {
+        "prompt": "картошка — ? (по-английски)",
+        "answer": "potato",
+        "hint": "Начинается так: p _ _ _ _ _"
+       }
+      ]
+     }
+    ],
+    "feedback": "Ты узнал слова по фразам, а не зубрил список — так они и остаются в голове."
+   }
+  }
+ ]
+}

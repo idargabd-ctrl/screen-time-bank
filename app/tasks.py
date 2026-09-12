@@ -229,14 +229,23 @@ def normalize(text: str) -> str:
 
 
 def is_correct(given: str, expected: str) -> bool:
-    g, e = normalize(given), normalize(expected)
-    if g == e:
-        return True
-    # Числа сравниваем как числа: «07» и «7», «2.0» и «2» — один ответ.
-    try:
-        return abs(float(g) - float(e)) < 1e-9
-    except (TypeError, ValueError):
-        return False
+    """
+    Ответ может допускать варианты через «|»: «мама|мать». Нужно переводам —
+    у слова бывает два одинаково верных русских значения, и требовать одно
+    из них значило бы наказывать за знание.
+    """
+    g = normalize(given)
+    for variant in str(expected).split("|"):
+        e = normalize(variant)
+        if g == e:
+            return True
+        # Числа сравниваем как числа: «07» и «7», «2.0» и «2» — один ответ.
+        try:
+            if abs(float(g) - float(e)) < 1e-9:
+                return True
+        except (TypeError, ValueError):
+            pass
+    return False
 
 
 @dataclass

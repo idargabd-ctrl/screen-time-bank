@@ -147,6 +147,27 @@
   {% endif %}
 </div>
 
+{# План на неделю из content/schedule.json: что будет назначено вместо
+   ротации. Черновики помечены — их надо утвердить ниже до нужного дня. #}
+{% if plan %}
+<div>
+  <h2 id="plan">План на неделю</h2>
+  <table class="table table--stack">
+    <thead><tr><th>День</th><th>Миссии</th><th>ВПР</th><th>Английский</th></tr></thead>
+    <tbody>
+    {% for d in plan %}
+      <tr>
+        <td data-th="День">{{ d.day[5:] }}</td>
+        <td data-th="Миссии">{{ d.sections.get("missions", [])|join("; ") or "—" }}</td>
+        <td data-th="ВПР">{{ d.sections.get("vpr", [])|join("; ") or "—" }}</td>
+        <td data-th="Английский">{{ d.sections.get("english", [])|join("; ") or "—" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 {# Утренний чек-лист: что отмечено при входе. Ритуал, не сделка. #}
 <div>
   <h2 id="checklist">Утренний чек-лист</h2>

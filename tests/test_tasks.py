@@ -195,3 +195,11 @@ def test_questions_survive_a_round_trip_through_the_database():
     qs = tasks.generate(tasks.MATH, {"count": 3}, seed=9)
     restored = tasks.load(json.loads(json.dumps(tasks.dump(qs))))
     assert [(q.prompt, q.answer, q.hint) for q in restored] == [(q.prompt, q.answer, q.hint) for q in qs]
+
+
+def test_answer_may_list_alternatives_with_a_pipe():
+    """mother — «мама» или «мать»: оба верны, требовать одно — наказывать за знание."""
+    assert tasks.is_correct("Мама", "мама|мать")
+    assert tasks.is_correct("мать ", "мама|мать")
+    assert not tasks.is_correct("папа", "мама|мать")
+    assert tasks.is_correct("7", "07|семь") and tasks.is_correct("семь", "07|семь")

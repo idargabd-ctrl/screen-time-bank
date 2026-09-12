@@ -1,0 +1,176 @@
+{
+ "_comment": [
+  "План на 14–27 сентября 2026 — docs/plan-2026-09-14-27.md.",
+  "День → раздел → slug по порядку. Английский через день с 14.09; в такие дни разборов ВПР два, иначе три.",
+  "Неделя 2 повторяет каждый разбор недели 1 через 7–8 дней (очередь повторений в простом виде).",
+  "Миссии m4/m5/r4/r5 — новые навыки, появятся черновиками; пока их нет в каталоге, день соберёт ротация."
+ ],
+ "2026-09-14": {
+  "missions": [
+   "mission-m1-reklama-nabora",
+   "mission-r1-lozhnoe-proverochnoe"
+  ],
+  "vpr": [
+   "vpr4-demo-01-vychisli-43-27",
+   "vpr4-01-vychisli-260-na-20"
+  ],
+  "english": [
+   "eng-01-family"
+  ]
+ },
+ "2026-09-15": {
+  "missions": [
+   "mission-m2-ploshad-i-perimetr",
+   "mission-r2-kto-chto-sdelal"
+  ],
+  "vpr": [
+   "vpr4-demo-02-7-plus-3-na-8-plus-12",
+   "vpr4-02-34-minus-4-na-7-plus-16",
+   "vpr4-demo-03-sdacha-so-100"
+  ]
+ },
+ "2026-09-16": {
+  "missions": [
+   "mission-m3-uspet-k-finalu",
+   "mission-r3-slovo-menyaet-rol"
+  ],
+  "vpr": [
+   "vpr4-03-hlebobulochnye-ceny",
+   "vpr4-demo-04-nachalo-sekcii"
+  ],
+  "english": [
+   "eng-02-looks"
+  ]
+ },
+ "2026-09-17": {
+  "missions": [
+   "mission-m1b-skiny-optom",
+   "mission-r1b-stal-i-stol"
+  ],
+  "vpr": [
+   "vpr4-04-mama-gotovila-uzhin",
+   "vpr4-demo-08-varenje-banki",
+   "vpr4-08-pododeyalniki-navolochki"
+  ]
+ },
+ "2026-09-18": {
+  "missions": [
+   "mission-m2b-kovrik-i-lenta",
+   "mission-r2b-robot-na-parkovke"
+  ],
+  "vpr": [
+   "vpr4-demo-10-imya-v-zerkale",
+   "vpr4-demo-07-12012-na-3-minus-170-na-4"
+  ],
+  "english": [
+   "eng-03-jobs"
+  ]
+ },
+ "2026-09-19": {
+  "missions": [
+   "mission-m3b-strim-zakonchilsya",
+   "mission-r3b-pech-i-pech"
+  ],
+  "vpr": [
+   "vpr4-07-840-na-6-minus-138-na-3",
+   "vpr4-demo-11-velosipedy-ruli-kolesa",
+   "vpr4-demo-05-ploshad-pryamougolnika"
+  ]
+ },
+ "2026-09-20": {
+  "missions": [
+   "mission-o1-mozhno-li-verit-opytu",
+   "mission-r1c-visna-ili-vesna"
+  ],
+  "vpr": [
+   "vpr4-05-perimetr-kvadrata",
+   "vpr4-demo-06-medali-tablica"
+  ],
+  "english": [
+   "eng-04-review-1"
+  ]
+ },
+ "2026-09-21": {
+  "missions": [
+   "mission-m4-skobki-pervymi",
+   "mission-r4-zamok-i-zamok"
+  ],
+  "vpr": [
+   "vpr4-demo-09-tatyana-vstrechi",
+   "vpr4-demo-01-vychisli-43-27",
+   "vpr4-01-vychisli-260-na-20"
+  ]
+ },
+ "2026-09-22": {
+  "missions": [
+   "mission-m1c-picca-na-komandu",
+   "mission-r2c-avatar-prygnul"
+  ],
+  "vpr": [
+   "vpr4-demo-02-7-plus-3-na-8-plus-12",
+   "vpr4-02-34-minus-4-na-7-plus-16"
+  ],
+  "english": [
+   "eng-05-places"
+  ]
+ },
+ "2026-09-23": {
+  "missions": [
+   "mission-m5-santimetry-i-metry",
+   "mission-r5-koren-i-pristavka"
+  ],
+  "vpr": [
+   "vpr4-demo-03-sdacha-so-100",
+   "vpr4-03-hlebobulochnye-ceny",
+   "vpr4-demo-04-nachalo-sekcii"
+  ]
+ },
+ "2026-09-24": {
+  "missions": [
+   "mission-m2c-zagon-dlya-lam",
+   "mission-r3c-eli-i-eli"
+  ],
+  "vpr": [
+   "vpr4-04-mama-gotovila-uzhin",
+   "vpr4-demo-08-varenje-banki"
+  ],
+  "english": [
+   "eng-06-food"
+  ]
+ },
+ "2026-09-25": {
+  "missions": [
+   "mission-m4b-tri-deystviya",
+   "mission-r4b-udarenie-menyaet-smysl"
+  ],
+  "vpr": [
+   "vpr4-08-pododeyalniki-navolochki",
+   "vpr4-demo-10-imya-v-zerkale",
+   "vpr4-demo-07-12012-na-3-minus-170-na-4"
+  ]
+ },
+ "2026-09-26": {
+  "missions": [
+   "mission-m3c-kvest-v-parke",
+   "mission-r5b-suffiks-podskazhet"
+  ],
+  "vpr": [
+   "vpr4-07-840-na-6-minus-138-na-3",
+   "vpr4-demo-11-velosipedy-ruli-kolesa"
+  ],
+  "english": [
+   "eng-07-zoo"
+  ]
+ },
+ "2026-09-27": {
+  "missions": [
+   "mission-m5b-grammy-i-kilogrammy",
+   "mission-o1b-rostki-na-okne"
+  ],
+  "vpr": [
+   "vpr4-demo-05-ploshad-pryamougolnika",
+   "vpr4-05-perimetr-kvadrata",
+   "vpr4-demo-06-medali-tablica"
+  ]
+ }
+}
